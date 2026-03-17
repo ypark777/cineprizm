@@ -9,6 +9,7 @@
   <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
   <style>
     :root {
       --bg-primary:   #ffffff;
@@ -103,13 +104,13 @@
     const LOAD_MSGS = [
       "Variety · The Hollywood Reporter 기사 검색 중…",
       "IMDb · Rotten Tomatoes 정보 조회 중…",
-      "감독 필모그래피 박스오피스 분석 중…",
-      "배우 흥행 이력 데이터 수집 중…",
+      "감독 필모그래피 KOBIS 누적관객수 조회 중…",
+      "배우 흥행 이력 KOBIS 데이터 수집 중…",
       "Reddit · 해외 커뮤니티 반응 확인 중…",
       "익스트림무비 · 무비코리아 검색 중…",
-      "한국 유사 작품 흥행 비교 중…",
-      "영화제 시사 리뷰 수집 중…",
-      "극장 배급 전략 수립 중…",
+      "유사작 KOBIS 한국 누적관객수 비교 중…",
+      "BoxOfficeMojo 북미 개봉 일정 조회 중…",
+      "경쟁작 분석 · 최적 배급 시기 수립 중…",
       "마케팅 플랜 · 보도자료 초안 작성 중…",
     ];
 
@@ -146,14 +147,31 @@
 5. Reddit: r/movies, r/criterion, r/filmfestivals, 장르 서브레딧
 6. 익스트림무비(extrememovie.com) — 국내 영화 커뮤니티 반응
 7. 무비코리아, 네이버 영화, 왓챠피디아 — 국내 기대감 및 커뮤니티 DB
-8. KOBIS(kobis.or.kr) — 한국 유사 장르 영화 박스오피스
+8. KOBIS(kobis.or.kr) — 한국 개봉 영화 누적관객수
+9. BoxOfficeMojo(boxofficemojo.com/calendar/) — 북미 개봉 예정 일정
 
-【중요】tradePressAndBuzz의 url 필드는 반드시 웹 검색으로 실제 확인된 URL만 기재할 것.
-찾지 못한 경우 url 필드를 빈 문자열("")로 기입하세요. URL을 절대 추측하거나 생성하지 마세요.
+【KOBIS 한국 흥행 조회 절차 — 반드시 준수】
+감독·배우 필모그래피의 한국 흥행 수치 및 유사작 비교 수치는 반드시 아래 절차로 조회한다:
+① 영화 영문 원제로 KOBIS(kobis.or.kr) 검색 → 한국 개봉명 확인 → 누적관객수(발권통계) 기록
+② KOBIS에서 결과가 없으면: 네이버에서 "영화 [영문원제]" 형식으로 검색 → 관객수 확인
+③ 두 방법 모두 실패 시: koreanAudience 필드에 "미개봉" 또는 "정보없음" 기재
+④ 반드시 한국개봉명(koreanTitle)과 누적관객수(koreanAudience, 단위: 명)를 함께 기재
+⑤ 예시: title="Knives Out", koreanTitle="나이브스 아웃", koreanAudience="1,247,832명"
+
+【BoxOfficeMojo 북미 개봉 일정 조회 절차】
+theatricalStrategy.releaseTimingSuggestion 작성 시 반드시:
+① boxofficemojo.com/calendar/ 에서 해당 영화의 북미 개봉일 확인
+② 분석 대상 영화의 북미 개봉 시기 전후 2~3개월 북미 주요 개봉작 조회
+③ 한국 메이저 직배사(CJ ENM, 월트디즈니, 유니버설, 워너브라더스, 소니 등)는 북미와 동일 개봉일(Day & Date) 또는 1~2주 이내 한국 개봉이 관행임
+④ 위 직배사 라인업과 겹치지 않는 최적 한국 개봉 시기를 추천하고, 경쟁 회피 근거를 구체적으로 서술
+⑤ 만약 사용자가 배급사 라인업 데이터를 업로드한 경우, 해당 데이터를 우선 반영하여 배급 시기 추천
+
+【tradePressAndBuzz URL 규칙】
+url 필드는 반드시 웹 검색으로 실제 확인된 URL만 기재. 찾지 못한 경우 빈 문자열(""). URL 절대 추측·생성 금지.
 
 아래 JSON 형식으로만 응답하세요. JSON 외 다른 텍스트나 마크다운 코드블록은 절대 포함 금지:
 
-{"filmOverview":{"title":"","koreanTitle":"","year":"","country":"","genre":"","runtime":"","status":"","releaseDate":"","imdbRating":"","rtScore":"","synopsis":"","awards":"","festivalHistory":""},"tradePressAndBuzz":{"tradeArticles":[{"source":"","title":"","url":"","date":"","summary":""}],"communityBuzz":[{"platform":"","title":"","url":"","sentiment":"","note":""}],"festivalReviews":[{"source":"","title":"","url":"","sentiment":""}],"overallSentiment":"","buzzSummary":""},"directorAnalysis":{"name":"","nationality":"","careerSummary":"","majorWorks":[{"title":"","year":"","globalBO":"","koreanBO":""}],"koreanMarketSummary":"","acquisitionValue":""},"castAnalysis":[{"name":"","role":"","nationality":"","koreanRecognition":"","majorWorks":[{"title":"","year":"","note":""}],"marketingValue":""}],"marketAnalysis":{"opportunities":[{"factor":"","description":""}],"threats":[{"factor":"","description":""}],"comparableFilms":[{"title":"","koreanBO":"","relevance":""}],"optimalReleaseWindow":""},"marketingPlan":{"primaryTarget":"","secondaryTarget":"","keywords":[],"taglines":[],"platformStrategy":"","keySellingPoints":[],"theatricalStrategy":{"releaseType":"","recommendedScreenCount":"","targetTheatreChains":"","releaseTimingSuggestion":"","competitionAnalysis":"","platformWindowStrategy":""}},"pressReleaseDraft":"","overallAssessment":{"acquisitionScore":7,"recommendation":"","expectedAudienceRange":"","keyRisks":"","finalOpinion":""}}
+{"filmOverview":{"title":"","koreanTitle":"","year":"","country":"","genre":"","runtime":"","status":"","releaseDate":"","imdbRating":"","rtScore":"","synopsis":"","awards":"","festivalHistory":""},"tradePressAndBuzz":{"tradeArticles":[{"source":"","title":"","url":"","date":"","summary":""}],"communityBuzz":[{"platform":"","title":"","url":"","sentiment":"","note":""}],"festivalReviews":[{"source":"","title":"","url":"","sentiment":""}],"overallSentiment":"","buzzSummary":""},"directorAnalysis":{"name":"","nationality":"","careerSummary":"","majorWorks":[{"title":"원제","koreanTitle":"한국개봉명(없으면 미개봉)","year":"","globalBO":"글로벌 흥행","koreanAudience":"누적관객수(명) 또는 미개봉"}],"koreanMarketSummary":"","acquisitionValue":""},"castAnalysis":[{"name":"","role":"","nationality":"","koreanRecognition":"","majorWorks":[{"title":"원제","koreanTitle":"한국개봉명(없으면 미개봉)","year":"","koreanAudience":"누적관객수(명) 또는 미개봉","note":"흥행·수상 메모"}],"marketingValue":""}],"marketAnalysis":{"opportunities":[{"factor":"","description":""}],"threats":[{"factor":"","description":""}],"comparableFilms":[{"title":"원제","koreanTitle":"한국개봉명","koreanAudience":"누적관객수(명)","relevance":"비교근거"}],"optimalReleaseWindow":""},"marketingPlan":{"primaryTarget":"","secondaryTarget":"","keywords":[],"taglines":[],"platformStrategy":"","keySellingPoints":[],"theatricalStrategy":{"releaseType":"와이드 개봉(300관 이상) 또는 중소규모(100-300관) 또는 한정/아트하우스(100관 미만)","recommendedScreenCount":"","targetTheatreChains":"","releaseTimingSuggestion":"BoxOfficeMojo 북미 개봉 일정 및 직배사 경쟁작을 고려한 추천 한국 개봉 시기","competitionAnalysis":"북미 동시 개봉 직배사 경쟁작 및 한국 시장 경쟁 분석","platformWindowStrategy":""}},"pressReleaseDraft":"","overallAssessment":{"acquisitionScore":7,"recommendation":"","expectedAudienceRange":"","keyRisks":"","finalOpinion":""}}
 
 위 JSON 스키마를 실제 분석 결과로 채워서 반환하세요.`;
 
@@ -397,6 +415,8 @@
       const [batch,  setBatch]      = useState([]);
       const [copied, setCopied]     = useState("");
       const [showSettings,setShowSettings] = useState(false);
+      const [lineup, setLineup]     = useState(null); // parsed distributor lineup
+      const [lineupName, setLineupName] = useState("");
       const timerRef = useRef(null);
 
       useEffect(() => {
@@ -416,6 +436,28 @@
         try { localStorage.setItem("prizm:history",JSON.stringify(nh)); } catch{}
       };
 
+      const parseLineup = (file) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          try {
+            if (file.name.endsWith(".csv")) {
+              const text = e.target.result;
+              const rows = text.split("\n").filter(r=>r.trim()).map(r=>r.split(",").map(c=>c.trim().replace(/^"|"$/g,"")));
+              const headers = rows[0];
+              const data = rows.slice(1).map(r=>Object.fromEntries(headers.map((h,i)=>[h,r[i]||""])));
+              setLineup(data); setLineupName(file.name);
+            } else {
+              const wb = XLSX.read(e.target.result, {type:"array"});
+              const ws = wb.Sheets[wb.SheetNames[0]];
+              const data = XLSX.utils.sheet_to_json(ws,{defval:""});
+              setLineup(data); setLineupName(file.name);
+            }
+          } catch(err) { setError("파일 파싱 실패: "+err.message); }
+        };
+        if (file.name.endsWith(".csv")) reader.readAsText(file,"UTF-8");
+        else reader.readAsArrayBuffer(file);
+      };
+
       const runAnalysis = async (fd) => {
         if (!fd.titleEn?.trim()||!fd.director?.trim()) { setError("영문 제목과 감독명은 필수 항목입니다."); return; }
         setError(""); setView("loading"); setResult(null); setLoadStep(0);
@@ -433,6 +475,7 @@
             fd.status&&`제작 상태: ${fd.status}`,
             fd.source&&`원작: ${fd.source}`,
             fd.synopsis&&`시놉시스 힌트: ${fd.synopsis}`,
+            lineup&&`\n【배급사 라인업 데이터 (${lineupName})】\n다음은 사용자가 업로드한 배급사 상영 예정 라인업입니다. 배급 시기 추천 시 이 데이터를 최우선으로 참고하여 경쟁 회피 전략을 수립하세요:\n${JSON.stringify(lineup,null,2).slice(0,3000)}`,
           ].filter(Boolean).join("\n");
 
           const res = await fetch("https://api.anthropic.com/v1/messages",{
@@ -612,7 +655,32 @@
                       style={{...inp,height:80,resize:"vertical"}}/>
                   </div>
 
-                  <div style={{display:"flex",gap:10}}>
+                  <div style={{marginBottom:22}}>
+                    <label style={{fontSize:11,color:"var(--text-secondary)",letterSpacing:"0.07em",textTransform:"uppercase",display:"block",marginBottom:6}}>
+                      배급사 라인업 파일 <span style={{color:"var(--text-tertiary)",textTransform:"none",fontWeight:400,letterSpacing:0}}>(선택 — 엑셀/CSV, 개봉일정 반영)</span>
+                    </label>
+                    {lineup?(
+                      <div style={{display:"flex",alignItems:"center",gap:12,padding:"10px 14px",background:"rgba(5,150,105,0.06)",border:"1px solid rgba(5,150,105,0.2)",borderRadius:"var(--radius-md)"}}>
+                        <span style={{fontSize:20}}>📋</span>
+                        <div style={{flex:1}}>
+                          <p style={{fontSize:13,fontWeight:500,color:"#059669",margin:0}}>{lineupName}</p>
+                          <p style={{fontSize:11,color:"var(--text-tertiary)",margin:"2px 0 0"}}>{Array.isArray(lineup)?lineup.length:Object.keys(lineup).length}행 데이터 로드됨 — 배급 시기 추천에 반영됩니다</p>
+                        </div>
+                        <button onClick={()=>{setLineup(null);setLineupName("");}} style={{background:"none",border:"none",color:"var(--text-tertiary)",cursor:"pointer",fontSize:18,padding:"0 4px",lineHeight:1}}>×</button>
+                      </div>
+                    ):(
+                      <label style={{display:"block",cursor:"pointer"}}>
+                        <div style={{border:"1.5px dashed var(--border-secondary)",borderRadius:"var(--radius-md)",padding:"18px",textAlign:"center",background:"var(--bg-secondary)",transition:"border-color .15s"}}
+                          onDragOver={e=>{e.preventDefault();e.currentTarget.style.borderColor="#c9292b";}}
+                          onDragLeave={e=>{e.currentTarget.style.borderColor="";}}
+                          onDrop={e=>{e.preventDefault();e.currentTarget.style.borderColor="";const f=e.dataTransfer.files[0];if(f)parseLineup(f);}}>
+                          <p style={{fontSize:13,color:"var(--text-secondary)",margin:0}}>📁 클릭하거나 파일을 여기에 드래그</p>
+                          <p style={{fontSize:11,color:"var(--text-tertiary)",margin:"4px 0 0"}}>.xlsx · .xls · .csv 지원</p>
+                        </div>
+                        <input type="file" accept=".xlsx,.xls,.csv" style={{display:"none"}} onChange={e=>{const f=e.target.files?.[0];if(f)parseLineup(f);e.target.value="";}}/>
+                      </label>
+                    )}
+                  </div>
                     <button onClick={()=>runAnalysis(form)} style={{flex:1,background:"#c9292b",border:"none",borderRadius:"var(--radius-md)",
                       color:"#fff",padding:"13px 20px",fontSize:15,fontWeight:500,cursor:"pointer",letterSpacing:"-0.01em"}}>
                       🔍  AI 분석 시작
@@ -795,7 +863,7 @@
                             <table style={{width:"100%",borderCollapse:"collapse",fontSize:13}}>
                               <thead>
                                 <tr style={{borderBottom:"0.5px solid var(--border-secondary)"}}>
-                                  {["작품명","연도","글로벌 흥행","한국 흥행"].map(h=>(
+                                  {["원제","한국개봉명","연도","글로벌 흥행","한국 누적관객"].map(h=>(
                                     <th key={h} style={{textAlign:"left",color:"var(--text-tertiary)",padding:"5px 10px",fontWeight:400,fontSize:11,textTransform:"uppercase",letterSpacing:"0.05em"}}>{h}</th>
                                   ))}
                                 </tr>
@@ -804,9 +872,10 @@
                                 {R.directorAnalysis.majorWorks.map((w,i)=>(
                                   <tr key={i} style={{borderBottom:"0.5px solid var(--border-tertiary)"}}>
                                     <td style={{padding:"10px",fontWeight:500}}>{w.title}</td>
+                                    <td style={{padding:"10px",color:"var(--text-primary)"}}>{w.koreanTitle||"—"}</td>
                                     <td style={{padding:"10px",color:"var(--text-tertiary)",fontFamily:"'DM Mono',monospace",fontSize:12}}>{w.year}</td>
-                                    <td style={{padding:"10px",color:"var(--text-secondary)"}}>{w.globalBO}</td>
-                                    <td style={{padding:"10px",color:"var(--text-secondary)"}}>{w.koreanBO}</td>
+                                    <td style={{padding:"10px",color:"var(--text-secondary)"}}>{w.globalBO||"—"}</td>
+                                    <td style={{padding:"10px",color:w.koreanAudience&&w.koreanAudience!=="미개봉"&&w.koreanAudience!=="정보없음"?"#d97706":"var(--text-tertiary)",fontFamily:"'DM Mono',monospace",fontSize:12}}>{w.koreanAudience||w.koreanBO||"—"}</td>
                                   </tr>
                                 ))}
                               </tbody>
@@ -832,10 +901,16 @@
                             {actor.koreanRecognition&&<Badge c={rc.c} bg={rc.bg}>한국 인지도 {actor.koreanRecognition}</Badge>}
                           </div>
                           {actor.majorWorks?.map((w,j)=>(
-                            <div key={j} style={{fontSize:13,color:"var(--text-secondary)",marginBottom:4}}>
+                            <div key={j} style={{fontSize:13,color:"var(--text-secondary)",marginBottom:6,paddingLeft:2}}>
                               <span style={{color:"var(--text-primary)",fontWeight:500}}>{w.title}</span>
+                              {w.koreanTitle&&w.koreanTitle!=="미개봉"&&(
+                                <span style={{color:"var(--text-secondary)"}}> / {w.koreanTitle}</span>
+                              )}
                               <span style={{color:"var(--text-tertiary)"}}> ({w.year})</span>
-                              {w.note&&<span> — {w.note}</span>}
+                              {w.koreanAudience&&w.koreanAudience!=="미개봉"&&w.koreanAudience!=="정보없음"&&(
+                                <span style={{color:"#d97706",fontFamily:"'DM Mono',monospace",fontSize:11,marginLeft:6}}>🇰🇷 {w.koreanAudience}</span>
+                              )}
+                              {w.note&&<span style={{color:"var(--text-tertiary)"}}> — {w.note}</span>}
                             </div>
                           ))}
                           <p style={{fontSize:13,color:"var(--text-secondary)",margin:"10px 0 0",lineHeight:1.65,borderTop:"0.5px solid var(--border-tertiary)",paddingTop:10}}>{actor.marketingValue}</p>
@@ -870,12 +945,12 @@
                     </div>
                     {R.marketAnalysis?.comparableFilms?.length>0&&(
                       <Card>
-                        <SH>유사 작품 한국 흥행 비교</SH>
+                        <SH>유사 작품 한국 흥행 비교 <span style={{fontSize:11,fontWeight:400,fontFamily:"'DM Sans',sans-serif",color:"var(--text-tertiary)"}}>KOBIS 누적관객수 기준</span></SH>
                         <div style={{overflowX:"auto"}}>
                           <table style={{width:"100%",borderCollapse:"collapse",fontSize:13}}>
                             <thead>
                               <tr style={{borderBottom:"0.5px solid var(--border-secondary)"}}>
-                                {["비교 영화","한국 흥행","비교 근거"].map(h=>(
+                                {["원제","한국개봉명","누적관객수","비교 근거"].map(h=>(
                                   <th key={h} style={{textAlign:"left",color:"var(--text-tertiary)",padding:"5px 10px",fontWeight:400,fontSize:11,textTransform:"uppercase",letterSpacing:"0.05em"}}>{h}</th>
                                 ))}
                               </tr>
@@ -883,8 +958,9 @@
                             <tbody>
                               {R.marketAnalysis.comparableFilms.map((f,i)=>(
                                 <tr key={i} style={{borderBottom:"0.5px solid var(--border-tertiary)"}}>
-                                  <td style={{padding:"10px",fontWeight:500}}>{f.title}</td>
-                                  <td style={{padding:"10px",color:"#d97706",fontFamily:"'DM Mono',monospace",fontSize:12}}>{f.koreanBO}</td>
+                                  <td style={{padding:"10px",fontWeight:500,color:"var(--text-secondary)",fontSize:12}}>{f.title}</td>
+                                  <td style={{padding:"10px",fontWeight:500,color:"var(--text-primary)"}}>{f.koreanTitle||f.title}</td>
+                                  <td style={{padding:"10px",color:"#d97706",fontFamily:"'DM Mono',monospace",fontSize:12}}>{f.koreanAudience||f.koreanBO||"—"}</td>
                                   <td style={{padding:"10px",color:"var(--text-secondary)"}}>{f.relevance}</td>
                                 </tr>
                               ))}
