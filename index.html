@@ -9,7 +9,7 @@
   <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-  <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+  <script src="https://unpkg.com/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <style>
     :root {
       --bg-primary:   #ffffff;
@@ -447,6 +447,7 @@ url 필드는 반드시 웹 검색으로 실제 확인된 URL만 기재. 찾지 
               const data = rows.slice(1).map(r=>Object.fromEntries(headers.map((h,i)=>[h,r[i]||""])));
               setLineup(data); setLineupName(file.name);
             } else {
+              if (typeof XLSX === "undefined") { setError("엑셀 파서 로드 중입니다. 잠시 후 다시 시도하거나 CSV 파일을 사용해 주세요."); return; }
               const wb = XLSX.read(e.target.result, {type:"array"});
               const ws = wb.Sheets[wb.SheetNames[0]];
               const data = XLSX.utils.sheet_to_json(ws,{defval:""});
@@ -669,16 +670,16 @@ url 필드는 반드시 웹 검색으로 실제 확인된 URL만 기재. 찾지 
                         <button onClick={()=>{setLineup(null);setLineupName("");}} style={{background:"none",border:"none",color:"var(--text-tertiary)",cursor:"pointer",fontSize:18,padding:"0 4px",lineHeight:1}}>×</button>
                       </div>
                     ):(
-                      <label style={{display:"block",cursor:"pointer"}}>
-                        <div style={{border:"1.5px dashed var(--border-secondary)",borderRadius:"var(--radius-md)",padding:"18px",textAlign:"center",background:"var(--bg-secondary)",transition:"border-color .15s"}}
-                          onDragOver={e=>{e.preventDefault();e.currentTarget.style.borderColor="#c9292b";}}
-                          onDragLeave={e=>{e.currentTarget.style.borderColor="";}}
-                          onDrop={e=>{e.preventDefault();e.currentTarget.style.borderColor="";const f=e.dataTransfer.files[0];if(f)parseLineup(f);}}>
-                          <p style={{fontSize:13,color:"var(--text-secondary)",margin:0}}>📁 클릭하거나 파일을 여기에 드래그</p>
-                          <p style={{fontSize:11,color:"var(--text-tertiary)",margin:"4px 0 0"}}>.xlsx · .xls · .csv 지원</p>
-                        </div>
-                        <input type="file" accept=".xlsx,.xls,.csv" style={{display:"none"}} onChange={e=>{const f=e.target.files?.[0];if(f)parseLineup(f);e.target.value="";}}/>
-                      </label>
+                      <div
+                        onClick={()=>document.getElementById("lineup-input").click()}
+                        onDragOver={e=>{e.preventDefault();e.currentTarget.style.borderColor="#c9292b";}}
+                        onDragLeave={e=>{e.currentTarget.style.borderColor="";}}
+                        onDrop={e=>{e.preventDefault();e.currentTarget.style.borderColor="";const f=e.dataTransfer.files[0];if(f)parseLineup(f);}}
+                        style={{border:"1.5px dashed var(--border-secondary)",borderRadius:"var(--radius-md)",padding:"18px",textAlign:"center",background:"var(--bg-secondary)",cursor:"pointer",transition:"border-color .15s"}}>
+                        <p style={{fontSize:13,color:"var(--text-secondary)",margin:0}}>📁 클릭하거나 파일을 여기에 드래그</p>
+                        <p style={{fontSize:11,color:"var(--text-tertiary)",margin:"4px 0 0"}}>.xlsx · .xls · .csv 지원</p>
+                        <input id="lineup-input" type="file" accept=".xlsx,.xls,.csv" style={{display:"none"}} onChange={e=>{const f=e.target.files?.[0];if(f)parseLineup(f);e.target.value="";}}/>
+                      </div>
                     )}
                   </div>
                     <button onClick={()=>runAnalysis(form)} style={{flex:1,background:"#c9292b",border:"none",borderRadius:"var(--radius-md)",
@@ -1146,7 +1147,11 @@ url 필드는 반드시 웹 검색으로 실제 확인된 URL만 기재. 찾지 
       );
     }
 
-    ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+    try {
+      ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+    } catch(e) {
+      document.getElementById("root").innerHTML = '<div style="padding:40px;font-family:sans-serif;color:#c9292b"><h2>초기화 오류</h2><pre>'+e.message+'</pre></div>';
+    }
   </script>
 </body>
 </html>
