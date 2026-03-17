@@ -1,1157 +1,707 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>PRIZM — Film Acquisition Intelligence</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=DM+Sans:wght@300;400;500&family=DM+Mono&display=swap" rel="stylesheet" />
-  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
-  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-  <script src="https://unpkg.com/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-  <style>
-    :root {
-      --bg-primary:   #ffffff;
-      --bg-secondary: #f6f4f1;
-      --bg-tertiary:  #eeece8;
-      --bg-danger:    #fff5f5;
-      --bg-success:   #f0fdf4;
-      --text-primary:   #1a1917;
-      --text-secondary: #5c5955;
-      --text-tertiary:  #9c9894;
-      --text-danger:    #b91c1c;
-      --text-success:   #15803d;
-      --text-info:      #1d4ed8;
-      --border-primary:   #d0cdc8;
-      --border-secondary: #dedad5;
-      --border-tertiary:  #e8e5e0;
-      --border-danger:    #fecaca;
-      --border-success:   #bbf7d0;
-      --radius-sm: 6px;
-      --radius-md: 10px;
-      --radius-lg: 14px;
-    }
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    html { font-size: 16px; }
-    body {
-      font-family: 'DM Sans', system-ui, -apple-system, sans-serif;
-      background: var(--bg-tertiary);
-      color: var(--text-primary);
-      min-height: 100vh;
-      -webkit-font-smoothing: antialiased;
-    }
-    input, select, textarea, button {
-      font-family: 'DM Sans', system-ui, sans-serif;
-    }
-    input:focus, select:focus, textarea:focus {
-      outline: none;
-      border-color: rgba(201,41,43,0.5) !important;
-      box-shadow: 0 0 0 3px rgba(201,41,43,0.08) !important;
-    }
-    input::placeholder, textarea::placeholder { color: var(--text-tertiary); }
-    a { text-decoration: none; color: var(--text-info); }
-    a:hover { opacity: 0.78; }
-    ::-webkit-scrollbar { width: 6px; height: 6px; }
-    ::-webkit-scrollbar-track { background: transparent; }
-    ::-webkit-scrollbar-thumb { background: var(--border-primary); border-radius: 3px; }
-
-    @keyframes spin { to { transform: rotate(360deg); } }
-    @keyframes fadeUp { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:translateY(0); } }
-    @keyframes pulse { 0%,100%{opacity:.25} 50%{opacity:1} }
-    .fade-up { animation: fadeUp 0.35s ease; }
-    .hov-card:hover { border-color: var(--border-primary) !important; }
-    @media print { .no-print { display:none !important; } }
-    @media (max-width: 600px) {
-      .grid-2 { grid-template-columns: 1fr !important; }
-    }
-  </style>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>PRIZM — Film Acquisition Intelligence</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=DM+Sans:wght@300;400;500&family=DM+Mono&display=swap" rel="stylesheet"/>
+<script src="https://unpkg.com/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'DM Sans',system-ui,sans-serif;background:#eeece8;color:#1a1917;min-height:100vh;-webkit-font-smoothing:antialiased}
+input,select,textarea,button{font-family:inherit}
+input:focus,select:focus,textarea:focus{outline:none;border-color:rgba(201,41,43,.5)!important;box-shadow:0 0 0 3px rgba(201,41,43,.08)!important}
+input::placeholder,textarea::placeholder{color:#9c9894}
+a{color:#1d4ed8;text-decoration:none}
+a:hover{opacity:.78}
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-thumb{background:#d0cdc8;border-radius:3px}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes fu{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.fu{animation:fu .3s ease}
+#root{display:flex;flex-direction:column;min-height:100vh}
+header{background:#1a1928;height:54px;display:flex;align-items:center;padding:0 22px;border-bottom:1px solid rgba(255,255,255,.05);flex-shrink:0}
+.logo{font-family:'Playfair Display',serif;font-size:22px;font-weight:900;color:#c9292b;line-height:1;letter-spacing:.02em;cursor:pointer}
+.logo-sub{font-size:9px;color:rgba(255,255,255,.3);letter-spacing:.15em;text-transform:uppercase;margin-top:2px}
+.spacer{flex:1}
+.nav-btn{background:transparent;border:none;color:rgba(255,255,255,.45);border-radius:8px;padding:6px 13px;font-size:13px;cursor:pointer}
+.nav-btn.active,.nav-btn:hover{background:rgba(255,255,255,.1);color:rgba(255,255,255,.9)}
+.hbtn{background:transparent;border:1px solid rgba(255,255,255,.15);border-radius:8px;color:rgba(255,255,255,.65);padding:5px 13px;font-size:12px;cursor:pointer}
+main{max-width:900px;width:100%;margin:0 auto;padding:28px 20px;flex:1}
+.card{background:#fff;border:.5px solid #e8e5e0;border-radius:14px;padding:20px 22px;margin-bottom:14px}
+.card-title{font-family:'Playfair Display',serif;font-size:16px;font-weight:700;color:#1a1917;margin-bottom:15px;letter-spacing:-.01em}
+.form-label{font-size:11px;color:#5c5955;letter-spacing:.07em;text-transform:uppercase;display:block;margin-bottom:6px}
+.form-input{width:100%;background:#fff;border:1px solid #dedad5;border-radius:10px;color:#1a1917;padding:10px 14px;font-size:14px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:18px 24px;margin-bottom:18px}
+@media(max-width:600px){.grid2{grid-template-columns:1fr}}
+.btn-red{background:#c9292b;border:none;border-radius:10px;color:#fff;padding:13px 20px;font-size:15px;font-weight:500;cursor:pointer;flex:1}
+.btn-gray{background:#f6f4f1;border:.5px solid #dedad5;border-radius:10px;color:#5c5955;padding:13px 18px;font-size:13px;cursor:pointer}
+.pill{border-radius:20px;padding:6px 16px;font-size:13px;cursor:pointer;border:1px solid #e8e5e0;background:transparent;color:#5c5955;transition:all .15s}
+.bdg{display:inline-block;border-radius:20px;padding:3px 11px;font-size:12px;font-weight:500;white-space:nowrap;border:1px solid transparent}
+.tabs{display:flex;gap:4px;overflow-x:auto;margin-bottom:18px}
+.tab{background:transparent;color:#5c5955;border:.5px solid transparent;border-radius:10px;padding:8px 14px;font-size:13px;cursor:pointer;white-space:nowrap}
+.tab.active{background:#fff;color:#1a1917;border-color:#dedad5}
+.row-wrap{display:flex;gap:14px;margin-bottom:10px;align-items:flex-start}
+.row-label{color:#9c9894;font-size:12px;min-width:96px;flex-shrink:0;padding-top:2px}
+.row-val{color:#1a1917;font-size:14px;line-height:1.65;flex:1}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;color:#9c9894;padding:5px 10px;font-weight:400;font-size:11px;text-transform:uppercase;letter-spacing:.05em;border-bottom:.5px solid #dedad5}
+td{padding:10px;border-bottom:.5px solid #e8e5e0}
+.spinner{width:60px;height:60px;margin:0 auto 24px;border-radius:50%;border:2px solid #e8e5e0;border-top-color:#c9292b;animation:spin 1s linear infinite}
+.error-box{background:#fff5f5;border:1px solid #fecaca;border-radius:10px;padding:10px 14px;margin-bottom:16px;color:#b91c1c;font-size:13px}
+.upload-zone{border:1.5px dashed #dedad5;border-radius:10px;padding:18px;text-align:center;background:#f6f4f1;cursor:pointer;transition:border-color .15s}
+.upload-zone:hover{border-color:#c9292b}
+.upload-ok{display:flex;align-items:center;gap:12px;padding:10px 14px;background:rgba(5,150,105,.06);border:1px solid rgba(5,150,105,.2);border-radius:10px}
+.tagline{background:#f6f4f1;border-left:3px solid #c9292b;border-radius:0 8px 8px 0;padding:14px 18px;margin-bottom:10px;font-family:'Playfair Display',serif;font-size:17px;font-style:italic}
+.note-box{background:#f6f4f1;border-radius:8px;padding:12px 16px;margin-top:8px}
+.note-lbl{font-size:11px;color:#9c9894;text-transform:uppercase;letter-spacing:.07em;margin-bottom:5px}
+.risk-box{background:#fff5f5;border:1px solid #fecaca;border-radius:9px;padding:14px 18px;margin-bottom:18px}
+.hist-card{background:#fff;border:.5px solid #e8e5e0;border-radius:14px;padding:16px 18px;cursor:pointer;transition:border-color .15s}
+.hist-card:hover{border-color:#d0cdc8}
+.hist-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px}
+.kw{display:inline-block;background:#f6f4f1;color:#5c5955;border:.5px solid #e8e5e0;border-radius:20px;padding:4px 12px;font-size:13px;margin:2px 4px 2px 0}
+.link-row{padding:11px 0;border-bottom:.5px solid #e8e5e0}
+.link-row:last-child{border-bottom:none}
+.press-body{background:#f6f4f1;border-radius:10px;padding:22px 24px;line-height:1.9;font-size:14.5px;white-space:pre-wrap}
+#api-screen{min-height:100vh;background:#1a1928;display:flex;align-items:center;justify-content:center;padding:24px}
+.api-box{background:#fff;border-radius:20px;padding:48px 40px;max-width:460px;width:100%;box-shadow:0 32px 80px rgba(0,0,0,.35)}
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:100;display:flex;align-items:center;justify-content:center;padding:24px}
+.modal-box{background:#fff;border-radius:16px;padding:32px 28px;max-width:400px;width:100%}
+@media print{.no-print{display:none!important}}
+</style>
 </head>
 <body>
-  <div id="root"></div>
-
-  <script type="text/babel">
-    const { useState, useEffect, useRef, useCallback } = React;
-
-    /* ═══════════════════════════════════════════════════
-       CONSTANTS
-    ═══════════════════════════════════════════════════ */
-    const STATUS_CFG = {
-      "pre-production": { label:"Pre-Production", c:"#7c3aed", bg:"rgba(124,58,237,0.08)", border:"rgba(124,58,237,0.22)" },
-      "in-production":  { label:"In Production",  c:"#2563eb", bg:"rgba(37,99,235,0.08)",   border:"rgba(37,99,235,0.22)" },
-      "completed":      { label:"Completed",       c:"#059669", bg:"rgba(5,150,105,0.08)",   border:"rgba(5,150,105,0.22)" },
-      "released":       { label:"Released",        c:"#c9292b", bg:"rgba(201,41,43,0.08)",   border:"rgba(201,41,43,0.22)" },
-    };
-
-    const SENT_CFG = {
-      positive:          { label:"긍정적", c:"#059669", bg:"rgba(5,150,105,0.1)" },
-      mixed:             { label:"혼조",   c:"#d97706", bg:"rgba(217,119,6,0.1)" },
-      negative:          { label:"부정적", c:"#c9292b", bg:"rgba(201,41,43,0.1)" },
-      unknown:           { label:"미확인", c:"#6b7280", bg:"rgba(107,114,128,0.1)" },
-      insufficient_data: { label:"정보부족",c:"#6b7280", bg:"rgba(107,114,128,0.1)" },
-    };
-
-    const TABS = [
-      { id:"overview",  label:"영화 개요" },
-      { id:"buzz",      label:"언론·커뮤니티" },
-      { id:"cast",      label:"감독·배우" },
-      { id:"market",    label:"시장 분석" },
-      { id:"marketing", label:"마케팅 플랜" },
-      { id:"press",     label:"보도자료" },
-      { id:"verdict",   label:"종합 평가" },
-    ];
-
-    const LOAD_MSGS = [
-      "Variety · The Hollywood Reporter 기사 검색 중…",
-      "IMDb · Rotten Tomatoes 정보 조회 중…",
-      "감독 필모그래피 KOBIS 누적관객수 조회 중…",
-      "배우 흥행 이력 KOBIS 데이터 수집 중…",
-      "Reddit · 해외 커뮤니티 반응 확인 중…",
-      "익스트림무비 · 무비코리아 검색 중…",
-      "유사작 KOBIS 한국 누적관객수 비교 중…",
-      "BoxOfficeMojo 북미 개봉 일정 조회 중…",
-      "경쟁작 분석 · 최적 배급 시기 수립 중…",
-      "마케팅 플랜 · 보도자료 초안 작성 중…",
-    ];
-
-    const recColor = r => {
-      if (!r) return "#6b7280";
-      if (r.includes("추천")) return "#059669";
-      if (r.includes("검토") || r.includes("조건")) return "#d97706";
-      return "#c9292b";
-    };
-    const scoreColor = n => {
-      if (!n) return "var(--text-tertiary)";
-      if (n >= 8) return "#e8a500";
-      if (n >= 6) return "#059669";
-      if (n >= 4) return "#d97706";
-      return "#c9292b";
-    };
-
-    /* ═══════════════════════════════════════════════════
-       SYSTEM PROMPT
-    ═══════════════════════════════════════════════════ */
-    const SYSTEM_PROMPT = `당신은 한국 외국 영화 수입배급사의 시니어 영화 분석가입니다. 웹 검색을 최대한 활용하여 입력된 영화의 한국 배급 가능성을 종합 분석합니다.
-
-【제작 상태별 검색 지침】
-- pre-production: 개발 공지 기사, 감독/배우 캐스팅 확정 뉴스 중심
-- in-production: 촬영 현장 기사, 첫 스틸 및 예고편, 시장 반응 예측 중심
-- completed: 영화제 상영 리뷰, 시사회 반응, 배급 계약/판매 뉴스 중심
-- released: 최종 박스오피스 성적, 비평·관객 반응, 한국 개봉 이력 중심
-
-【필수 검색 소스 — 모두 검색할 것】
-1. IMDb, Rotten Tomatoes — 기본 정보 및 평점
-2. Variety (variety.com) — 기사, 리뷰, 박스오피스
-3. The Hollywood Reporter (hollywoodreporter.com) — 기사 및 비평
-4. Screen International, Deadline Hollywood — 영화제/마켓 뉴스
-5. Reddit: r/movies, r/criterion, r/filmfestivals, 장르 서브레딧
-6. 익스트림무비(extrememovie.com) — 국내 영화 커뮤니티 반응
-7. 무비코리아, 네이버 영화, 왓챠피디아 — 국내 기대감 및 커뮤니티 DB
-8. KOBIS(kobis.or.kr) — 한국 개봉 영화 누적관객수
-9. BoxOfficeMojo(boxofficemojo.com/calendar/) — 북미 개봉 예정 일정
-
-【KOBIS 한국 흥행 조회 절차 — 반드시 준수】
-감독·배우 필모그래피의 한국 흥행 수치 및 유사작 비교 수치는 반드시 아래 절차로 조회한다:
-① 영화 영문 원제로 KOBIS(kobis.or.kr) 검색 → 한국 개봉명 확인 → 누적관객수(발권통계) 기록
-② KOBIS에서 결과가 없으면: 네이버에서 "영화 [영문원제]" 형식으로 검색 → 관객수 확인
-③ 두 방법 모두 실패 시: koreanAudience 필드에 "미개봉" 또는 "정보없음" 기재
-④ 반드시 한국개봉명(koreanTitle)과 누적관객수(koreanAudience, 단위: 명)를 함께 기재
-⑤ 예시: title="Knives Out", koreanTitle="나이브스 아웃", koreanAudience="1,247,832명"
-
-【BoxOfficeMojo 북미 개봉 일정 조회 절차】
-theatricalStrategy.releaseTimingSuggestion 작성 시 반드시:
-① boxofficemojo.com/calendar/ 에서 해당 영화의 북미 개봉일 확인
-② 분석 대상 영화의 북미 개봉 시기 전후 2~3개월 북미 주요 개봉작 조회
-③ 한국 메이저 직배사(CJ ENM, 월트디즈니, 유니버설, 워너브라더스, 소니 등)는 북미와 동일 개봉일(Day & Date) 또는 1~2주 이내 한국 개봉이 관행임
-④ 위 직배사 라인업과 겹치지 않는 최적 한국 개봉 시기를 추천하고, 경쟁 회피 근거를 구체적으로 서술
-⑤ 만약 사용자가 배급사 라인업 데이터를 업로드한 경우, 해당 데이터를 우선 반영하여 배급 시기 추천
-
-【tradePressAndBuzz URL 규칙】
-url 필드는 반드시 웹 검색으로 실제 확인된 URL만 기재. 찾지 못한 경우 빈 문자열(""). URL 절대 추측·생성 금지.
-
-아래 JSON 형식으로만 응답하세요. JSON 외 다른 텍스트나 마크다운 코드블록은 절대 포함 금지:
-
-{"filmOverview":{"title":"","koreanTitle":"","year":"","country":"","genre":"","runtime":"","status":"","releaseDate":"","imdbRating":"","rtScore":"","synopsis":"","awards":"","festivalHistory":""},"tradePressAndBuzz":{"tradeArticles":[{"source":"","title":"","url":"","date":"","summary":""}],"communityBuzz":[{"platform":"","title":"","url":"","sentiment":"","note":""}],"festivalReviews":[{"source":"","title":"","url":"","sentiment":""}],"overallSentiment":"","buzzSummary":""},"directorAnalysis":{"name":"","nationality":"","careerSummary":"","majorWorks":[{"title":"원제","koreanTitle":"한국개봉명(없으면 미개봉)","year":"","globalBO":"글로벌 흥행","koreanAudience":"누적관객수(명) 또는 미개봉"}],"koreanMarketSummary":"","acquisitionValue":""},"castAnalysis":[{"name":"","role":"","nationality":"","koreanRecognition":"","majorWorks":[{"title":"원제","koreanTitle":"한국개봉명(없으면 미개봉)","year":"","koreanAudience":"누적관객수(명) 또는 미개봉","note":"흥행·수상 메모"}],"marketingValue":""}],"marketAnalysis":{"opportunities":[{"factor":"","description":""}],"threats":[{"factor":"","description":""}],"comparableFilms":[{"title":"원제","koreanTitle":"한국개봉명","koreanAudience":"누적관객수(명)","relevance":"비교근거"}],"optimalReleaseWindow":""},"marketingPlan":{"primaryTarget":"","secondaryTarget":"","keywords":[],"taglines":[],"platformStrategy":"","keySellingPoints":[],"theatricalStrategy":{"releaseType":"와이드 개봉(300관 이상) 또는 중소규모(100-300관) 또는 한정/아트하우스(100관 미만)","recommendedScreenCount":"","targetTheatreChains":"","releaseTimingSuggestion":"BoxOfficeMojo 북미 개봉 일정 및 직배사 경쟁작을 고려한 추천 한국 개봉 시기","competitionAnalysis":"북미 동시 개봉 직배사 경쟁작 및 한국 시장 경쟁 분석","platformWindowStrategy":""}},"pressReleaseDraft":"","overallAssessment":{"acquisitionScore":7,"recommendation":"","expectedAudienceRange":"","keyRisks":"","finalOpinion":""}}
-
-위 JSON 스키마를 실제 분석 결과로 채워서 반환하세요.`;
-
-    /* ═══════════════════════════════════════════════════
-       EXPORT HELPERS
-    ═══════════════════════════════════════════════════ */
-    function downloadCSV(R, title) {
-      const ov = R?.filmOverview, oa = R?.overallAssessment,
-            mp = R?.marketingPlan, ts = mp?.theatricalStrategy,
-            bz = R?.tradePressAndBuzz;
-      const rows = [
-        ["항목","내용"],
-        ["영화 제목 (영문)", ov?.title||""],
-        ["영화 제목 (한국어)", ov?.koreanTitle||""],
-        ["제작 상태", ov?.status||""],
-        ["제작연도", ov?.year||""],
-        ["제작국가", ov?.country||""],
-        ["장르", ov?.genre||""],
-        ["상영시간", ov?.runtime||""],
-        ["개봉일/예정", ov?.releaseDate||""],
-        ["IMDb 평점", ov?.imdbRating||""],
-        ["RT 점수", ov?.rtScore||""],
-        ["영화제 이력", ov?.festivalHistory||""],
-        ["시놉시스", ov?.synopsis||""],
-        ["",""],
-        ["구매 점수 (10점 만점)", oa?.acquisitionScore||""],
-        ["구매 추천 여부", oa?.recommendation||""],
-        ["예상 관객 수", oa?.expectedAudienceRange||""],
-        ["핵심 리스크", oa?.keyRisks||""],
-        ["종합 의견", oa?.finalOpinion||""],
-        ["",""],
-        ["감독명", R?.directorAnalysis?.name||""],
-        ["감독 국적", R?.directorAnalysis?.nationality||""],
-        ["감독 경력 요약", R?.directorAnalysis?.careerSummary||""],
-        ["한국 시장 실적", R?.directorAnalysis?.koreanMarketSummary||""],
-        ["",""],
-        ["핵심 타겟", mp?.primaryTarget||""],
-        ["부차 타겟", mp?.secondaryTarget||""],
-        ["키워드", (mp?.keywords||[]).join(", ")],
-        ["카피라인", (mp?.taglines||[]).join(" / ")],
-        ["",""],
-        ["극장 배급 유형", ts?.releaseType||""],
-        ["추천 개봉 시기", ts?.releaseTimingSuggestion||""],
-        ["추천 상영관 수", ts?.recommendedScreenCount||""],
-        ["극장 체인 전략", ts?.targetTheatreChains||""],
-        ["경쟁작 분석", ts?.competitionAnalysis||""],
-        ["OTT 전환 전략", ts?.platformWindowStrategy||""],
-        ["",""],
-        ["전반적 버즈 반응", bz?.overallSentiment||""],
-        ["버즈 요약", bz?.buzzSummary||""],
-        ["",""],
-        ["보도자료 초안", R?.pressReleaseDraft||""],
-      ];
-      const csv = rows.map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(",")).join("\r\n");
-      const blob = new Blob(["\uFEFF"+csv],{type:"text/csv;charset=utf-8;"});
-      const a=document.createElement("a"); a.href=URL.createObjectURL(blob);
-      a.download=`PRIZM_${(title||"film").replace(/\s+/g,"_")}_${new Date().toISOString().slice(0,10)}.csv`;
-      a.click();
-    }
-
-    function downloadTXT(R, title) {
-      const ts=R?.marketingPlan?.theatricalStrategy, hr="─".repeat(56);
-      const lines=[
-        "PRIZM — Film Acquisition Intelligence",hr,
-        `분석 리포트: ${R?.filmOverview?.title||title}`,
-        `생성일: ${new Date().toLocaleDateString("ko-KR")}`,
-        hr,"",
-        "■ 영화 기본 정보",
-        `  제목 (영문): ${R?.filmOverview?.title}`,
-        `  제목 (한국어): ${R?.filmOverview?.koreanTitle}`,
-        `  제작 상태: ${R?.filmOverview?.status}`,
-        `  제작연도 / 국가: ${R?.filmOverview?.year} / ${R?.filmOverview?.country}`,
-        `  장르 / 상영시간: ${R?.filmOverview?.genre} / ${R?.filmOverview?.runtime}`,
-        `  개봉일/예정: ${R?.filmOverview?.releaseDate}`,
-        `  IMDb: ${R?.filmOverview?.imdbRating}  |  RT: ${R?.filmOverview?.rtScore}`,
-        `  영화제: ${R?.filmOverview?.festivalHistory}`,
-        `  시놉시스: ${R?.filmOverview?.synopsis}`,
-        "","■ 종합 평가",
-        `  점수: ${R?.overallAssessment?.acquisitionScore}/10`,
-        `  추천: ${R?.overallAssessment?.recommendation}`,
-        `  예상 관객: ${R?.overallAssessment?.expectedAudienceRange}`,
-        `  리스크: ${R?.overallAssessment?.keyRisks}`,
-        `  의견: ${R?.overallAssessment?.finalOpinion}`,
-        "","■ 감독 분석",
-        `  감독: ${R?.directorAnalysis?.name} (${R?.directorAnalysis?.nationality})`,
-        `  ${R?.directorAnalysis?.careerSummary}`,
-        `  한국 시장: ${R?.directorAnalysis?.koreanMarketSummary}`,
-        "","■ 마케팅 플랜",
-        `  타겟: ${R?.marketingPlan?.primaryTarget}`,
-        `  키워드: ${(R?.marketingPlan?.keywords||[]).join(", ")}`,
-        "  카피라인:",
-        ...(R?.marketingPlan?.taglines||[]).map(t=>`    · "${t}"`),
-        "","■ 극장 배급 전략",
-        `  유형: ${ts?.releaseType}`,
-        `  개봉 시기: ${ts?.releaseTimingSuggestion}`,
-        `  상영관 수: ${ts?.recommendedScreenCount}`,
-        `  체인 전략: ${ts?.targetTheatreChains}`,
-        `  경쟁작: ${ts?.competitionAnalysis}`,
-        `  OTT 전환: ${ts?.platformWindowStrategy}`,
-        "",hr,"■ 보도자료 초안",hr,
-        R?.pressReleaseDraft||"",
-      ];
-      const blob=new Blob([lines.join("\n")],{type:"text/plain;charset=utf-8;"});
-      const a=document.createElement("a"); a.href=URL.createObjectURL(blob);
-      a.download=`PRIZM_${(title||"film").replace(/\s+/g,"_")}_${new Date().toISOString().slice(0,10)}.txt`;
-      a.click();
-    }
-
-    /* ═══════════════════════════════════════════════════
-       SMALL UI COMPONENTS
-    ═══════════════════════════════════════════════════ */
-    const Badge = ({c,bg,border,children,style={}}) => (
-      <span style={{display:"inline-block",background:bg||"var(--bg-secondary)",color:c||"var(--text-secondary)",
-        border:`1px solid ${border||(c?c+"30":"var(--border-tertiary)")}`,
-        borderRadius:20,padding:"3px 11px",fontSize:12,fontWeight:500,whiteSpace:"nowrap",...style}}>
-        {children}
-      </span>
-    );
-
-    const Row = ({label,value}) => {
-      if (!value||["N/A","해당없음","미정",""].includes(String(value).trim())) return null;
-      return (
-        <div style={{display:"flex",gap:14,marginBottom:10,alignItems:"flex-start"}}>
-          <span style={{color:"var(--text-tertiary)",fontSize:12,minWidth:96,flexShrink:0,paddingTop:2}}>{label}</span>
-          <span style={{color:"var(--text-primary)",fontSize:14,lineHeight:1.65,flex:1}}>{value}</span>
-        </div>
-      );
-    };
-
-    const Card = ({children,style={}}) => (
-      <div style={{background:"var(--bg-primary)",border:"0.5px solid var(--border-tertiary)",
-        borderRadius:"var(--radius-lg)",padding:"20px 22px",marginBottom:14,...style}}>
-        {children}
+<div id="api-screen" style="display:none">
+  <div class="api-box">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px">
+      <div style="display:flex;gap:3px">
+        <span style="width:8px;height:6px;background:#1a1928;border-radius:1px;opacity:.2;display:block"></span>
+        <span style="width:8px;height:6px;background:#1a1928;border-radius:1px;opacity:.35;display:block"></span>
+        <span style="width:8px;height:6px;background:#1a1928;border-radius:1px;opacity:.5;display:block"></span>
+        <span style="width:8px;height:6px;background:#1a1928;border-radius:1px;opacity:.65;display:block"></span>
+        <span style="width:8px;height:6px;background:#1a1928;border-radius:1px;opacity:.8;display:block"></span>
       </div>
-    );
+      <div>
+        <div style="font-family:'Playfair Display',serif;font-size:28px;font-weight:900;color:#c9292b;line-height:1">PRIZM</div>
+        <div style="font-size:9px;color:#9a9898;letter-spacing:.15em;text-transform:uppercase">Film Acquisition Intelligence</div>
+      </div>
+    </div>
+    <h1 style="font-family:'Playfair Display',serif;font-size:22px;font-weight:700;margin:24px 0 8px;color:#1a1917;line-height:1.3">API 키를 입력하세요</h1>
+    <p style="font-size:13px;color:#6b6966;line-height:1.7;margin-bottom:24px">
+      Anthropic API 키는 브라우저에만 저장되며 외부로 전송되지 않습니다.<br>
+      <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener" style="color:#c9292b">console.anthropic.com</a>에서 발급받을 수 있습니다.
+    </p>
+    <div style="position:relative;margin-bottom:16px">
+      <input id="api-key-input" type="password" placeholder="sk-ant-api..." style="width:100%;border:1.5px solid #dedad5;border-radius:10px;padding:13px 52px 13px 16px;font-size:14px;color:#1a1917;background:#faf9f8"/>
+      <button id="api-show-btn" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:#9a9898;font-size:13px">표시</button>
+    </div>
+    <button id="api-save-btn" disabled style="width:100%;background:#e0ddd9;border:none;border-radius:10px;color:#fff;padding:14px;font-size:15px;font-weight:500;cursor:not-allowed">PRIZM 시작하기 →</button>
+    <p style="font-size:11px;color:#b0ada8;margin-top:16px;text-align:center;line-height:1.6">키는 이 기기의 로컬 스토리지에만 저장됩니다.<br>공용 PC에서는 사용 후 설정에서 삭제하세요.</p>
+  </div>
+</div>
 
-    const SH = ({children,accent,style={}}) => (
-      <h2 style={{fontFamily:"'Playfair Display',Georgia,serif",fontSize:16,fontWeight:700,
-        color:accent||"var(--text-primary)",margin:"0 0 15px",letterSpacing:"-0.01em",...style}}>
-        {children}
-      </h2>
-    );
-
-    const LinkRow = ({title,source,date,url,sentimentKey,note}) => {
-      const s=SENT_CFG[sentimentKey]||SENT_CFG.unknown;
-      const live=url&&url.length>10&&url.startsWith("http");
-      return (
-        <div style={{padding:"11px 0",borderBottom:"0.5px solid var(--border-tertiary)"}}>
-          <div style={{display:"flex",flexWrap:"wrap",gap:6,alignItems:"center",marginBottom:4}}>
-            {source&&<span style={{fontSize:11,fontWeight:600,color:"var(--text-secondary)",textTransform:"uppercase",letterSpacing:"0.05em"}}>{source}</span>}
-            {date&&<span style={{fontSize:11,color:"var(--text-tertiary)"}}>{date}</span>}
-            <Badge c={s.c} bg={s.bg}>{s.label}</Badge>
-          </div>
-          {live
-            ?<a href={url} target="_blank" rel="noopener noreferrer"
-               style={{color:"var(--text-info)",fontSize:13,fontWeight:500,lineHeight:1.5,display:"block"}}>
-               {title} ↗</a>
-            :<span style={{color:"var(--text-primary)",fontSize:13,fontWeight:500,lineHeight:1.5,display:"block"}}>{title}</span>
-          }
-          {note&&<p style={{color:"var(--text-secondary)",fontSize:12,margin:"4px 0 0",lineHeight:1.5}}>{note}</p>}
-        </div>
-      );
-    };
-
-    /* ═══════════════════════════════════════════════════
-       API KEY SCREEN
-    ═══════════════════════════════════════════════════ */
-    function ApiKeyScreen({onSave}) {
-      const [key,setKey]=useState("");
-      const [show,setShow]=useState(false);
-      return (
-        <div style={{minHeight:"100vh",background:"#1a1928",display:"flex",alignItems:"center",justifyContent:"center",padding:24}}>
-          <div style={{background:"#ffffff",borderRadius:20,padding:"48px 40px",maxWidth:460,width:"100%",boxShadow:"0 32px 80px rgba(0,0,0,0.35)"}}>
-            {/* Logo */}
-            <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:36}}>
-              <div style={{display:"flex",gap:3}}>{[...Array(5)].map((_,i)=>(
-                <div key={i} style={{width:8,height:6,background:"#1a1928",borderRadius:1,opacity:0.15+i*0.15}}/>
-              ))}</div>
-              <div>
-                <div style={{fontFamily:"'Playfair Display',serif",fontSize:28,fontWeight:900,color:"#c9292b",lineHeight:1,letterSpacing:"0.02em"}}>PRIZM</div>
-                <div style={{fontSize:9,color:"#9a9898",letterSpacing:"0.15em",textTransform:"uppercase"}}>Film Acquisition Intelligence</div>
-              </div>
-            </div>
-
-            <h1 style={{fontFamily:"'Playfair Display',serif",fontSize:22,fontWeight:700,marginBottom:8,color:"#1a1917",lineHeight:1.3}}>
-              API 키를 입력하세요
-            </h1>
-            <p style={{fontSize:13,color:"#6b6966",lineHeight:1.7,marginBottom:28}}>
-              Anthropic API 키는 브라우저에만 저장되며 외부로 전송되지 않습니다.<br/>
-              <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener noreferrer"
-                 style={{color:"#c9292b"}}>console.anthropic.com</a>에서 발급받을 수 있습니다.
-            </p>
-
-            <div style={{position:"relative",marginBottom:16}}>
-              <input
-                type={show?"text":"password"}
-                value={key}
-                onChange={e=>setKey(e.target.value)}
-                onKeyDown={e=>e.key==="Enter"&&key.startsWith("sk-")&&onSave(key.trim())}
-                placeholder="sk-ant-api..."
-                style={{width:"100%",border:"1.5px solid #dedad5",borderRadius:10,padding:"13px 48px 13px 16px",
-                  fontSize:14,color:"#1a1917",background:"#faf9f8"}}
-              />
-              <button onClick={()=>setShow(s=>!s)}
-                style={{position:"absolute",right:12,top:"50%",transform:"translateY(-50%)",
-                  background:"none",border:"none",cursor:"pointer",color:"#9a9898",fontSize:13,padding:4}}>
-                {show?"숨기기":"표시"}
-              </button>
-            </div>
-
-            <button
-              onClick={()=>key.startsWith("sk-")&&onSave(key.trim())}
-              disabled={!key.startsWith("sk-")}
-              style={{width:"100%",background:key.startsWith("sk-")?"#c9292b":"#e0ddd9",
-                border:"none",borderRadius:10,color:"#fff",padding:"14px",fontSize:15,fontWeight:500,
-                cursor:key.startsWith("sk-")?"pointer":"not-allowed",transition:"background .2s"}}>
-              PRIZM 시작하기 →
-            </button>
-
-            <p style={{fontSize:11,color:"#b0ada8",marginTop:16,textAlign:"center",lineHeight:1.6}}>
-              키는 이 기기의 로컬 스토리지에만 저장됩니다.<br/>
-              공용 PC에서는 사용 후 설정에서 삭제하세요.
-            </p>
+<div id="root" style="display:none;flex-direction:column;min-height:100vh">
+  <header>
+    <div style="display:flex;gap:4px;margin-right:14px">
+      <span style="width:7px;height:5px;background:rgba(255,255,255,.15);border-radius:1px;display:block"></span>
+      <span style="width:7px;height:5px;background:rgba(255,255,255,.15);border-radius:1px;display:block"></span>
+      <span style="width:7px;height:5px;background:rgba(255,255,255,.15);border-radius:1px;display:block"></span>
+      <span style="width:7px;height:5px;background:rgba(255,255,255,.15);border-radius:1px;display:block"></span>
+      <span style="width:7px;height:5px;background:rgba(255,255,255,.15);border-radius:1px;display:block"></span>
+    </div>
+    <div onclick="gotoForm()" style="cursor:pointer">
+      <div class="logo">PRIZM</div>
+      <div class="logo-sub">Film Acquisition Intelligence</div>
+    </div>
+    <div class="spacer"></div>
+    <div id="export-bar" class="no-print" style="display:none;gap:6px;margin-right:14px"></div>
+    <div class="no-print" style="display:flex;gap:3px;align-items:center">
+      <button class="nav-btn active" id="nav-form" onclick="gotoForm()">분석</button>
+      <button class="nav-btn" id="nav-hist" onclick="gotoHistory()">히스토리</button>
+      <button class="nav-btn" onclick="openSettings()">⚙</button>
+    </div>
+  </header>
+  <main>
+    <!-- FORM -->
+    <div id="v-form">
+      <div style="margin-bottom:24px">
+        <h1 style="font-family:'Playfair Display',serif;font-size:28px;font-weight:700;letter-spacing:-.02em;line-height:1.2;margin-bottom:8px">영화 구매 분석</h1>
+        <p style="color:#5c5955;font-size:14px;line-height:1.65">영화 정보를 입력하면 Variety · THR · IMDb · KOBIS · Reddit · 익스트림무비 등을 자동 검색하여 한국 배급 가능성 분석 리포트를 생성합니다.</p>
+      </div>
+      <div id="form-err" class="error-box" style="display:none"></div>
+      <div class="card">
+        <div style="margin-bottom:22px">
+          <label class="form-label">제작 상태</label>
+          <div style="display:flex;gap:8px;flex-wrap:wrap" id="status-pills">
+            <button class="pill" data-v="pre-production" onclick="toggleStatus(this)">Pre-Production</button>
+            <button class="pill" data-v="in-production" onclick="toggleStatus(this)">In Production</button>
+            <button class="pill" data-v="completed" onclick="toggleStatus(this)">Completed</button>
+            <button class="pill" data-v="released" onclick="toggleStatus(this)">Released</button>
           </div>
         </div>
-      );
-    }
-
-    /* ═══════════════════════════════════════════════════
-       MAIN APP
-    ═══════════════════════════════════════════════════ */
-    function App() {
-      const [apiKey, setApiKey]     = useState(() => localStorage.getItem("prizm:apikey")||"");
-      const [view,   setView]       = useState("form");
-      const [form,   setForm]       = useState({titleEn:"",titleKo:"",director:"",cast:"",genre:"",country:"",year:"",status:"",source:"",synopsis:""});
-      const [result, setResult]     = useState(null);
-      const [error,  setError]      = useState("");
-      const [tab,    setTab]        = useState("overview");
-      const [loadStep,setLoadStep]  = useState(0);
-      const [history,setHistory]    = useState([]);
-      const [batch,  setBatch]      = useState([]);
-      const [copied, setCopied]     = useState("");
-      const [showSettings,setShowSettings] = useState(false);
-      const [lineup, setLineup]     = useState(null); // parsed distributor lineup
-      const [lineupName, setLineupName] = useState("");
-      const timerRef = useRef(null);
-
-      useEffect(() => {
-        try { const d=localStorage.getItem("prizm:history"); if(d) setHistory(JSON.parse(d)); } catch{}
-      }, []);
-
-      const saveApiKey = key => { localStorage.setItem("prizm:apikey",key); setApiKey(key); };
-      const clearApiKey = () => { localStorage.removeItem("prizm:apikey"); setApiKey(""); setShowSettings(false); };
-
-      const saveHistory = (r, fd) => {
-        const entry = { id:Date.now(), date:new Date().toISOString(),
-          title:r.filmOverview?.title||fd.titleEn, koreanTitle:r.filmOverview?.koreanTitle||fd.titleKo,
-          status:r.filmOverview?.status||fd.status, score:r.overallAssessment?.acquisitionScore,
-          recommendation:r.overallAssessment?.recommendation, result:r, form:fd };
-        const nh = [entry,...history].slice(0,60);
-        setHistory(nh);
-        try { localStorage.setItem("prizm:history",JSON.stringify(nh)); } catch{}
-      };
-
-      const parseLineup = (file) => {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          try {
-            if (file.name.endsWith(".csv")) {
-              const text = e.target.result;
-              const rows = text.split("\n").filter(r=>r.trim()).map(r=>r.split(",").map(c=>c.trim().replace(/^"|"$/g,"")));
-              const headers = rows[0];
-              const data = rows.slice(1).map(r=>Object.fromEntries(headers.map((h,i)=>[h,r[i]||""])));
-              setLineup(data); setLineupName(file.name);
-            } else {
-              if (typeof XLSX === "undefined") { setError("엑셀 파서 로드 중입니다. 잠시 후 다시 시도하거나 CSV 파일을 사용해 주세요."); return; }
-              const wb = XLSX.read(e.target.result, {type:"array"});
-              const ws = wb.Sheets[wb.SheetNames[0]];
-              const data = XLSX.utils.sheet_to_json(ws,{defval:""});
-              setLineup(data); setLineupName(file.name);
-            }
-          } catch(err) { setError("파일 파싱 실패: "+err.message); }
-        };
-        if (file.name.endsWith(".csv")) reader.readAsText(file,"UTF-8");
-        else reader.readAsArrayBuffer(file);
-      };
-
-      const runAnalysis = async (fd) => {
-        if (!fd.titleEn?.trim()||!fd.director?.trim()) { setError("영문 제목과 감독명은 필수 항목입니다."); return; }
-        setError(""); setView("loading"); setResult(null); setLoadStep(0);
-        let step=0;
-        timerRef.current = setInterval(()=>{ step=Math.min(step+1,LOAD_MSGS.length-1); setLoadStep(step); },2800);
-        try {
-          const info=[
-            `영문 제목: ${fd.titleEn}`,
-            fd.titleKo&&`한국어 제목: ${fd.titleKo}`,
-            `감독: ${fd.director}`,
-            fd.cast&&`주연배우: ${fd.cast}`,
-            fd.genre&&`장르: ${fd.genre}`,
-            fd.country&&`제작국가: ${fd.country}`,
-            fd.year&&`제작연도: ${fd.year}`,
-            fd.status&&`제작 상태: ${fd.status}`,
-            fd.source&&`원작: ${fd.source}`,
-            fd.synopsis&&`시놉시스 힌트: ${fd.synopsis}`,
-            lineup&&`\n【배급사 라인업 데이터 (${lineupName})】\n다음은 사용자가 업로드한 배급사 상영 예정 라인업입니다. 배급 시기 추천 시 이 데이터를 최우선으로 참고하여 경쟁 회피 전략을 수립하세요:\n${JSON.stringify(lineup,null,2).slice(0,3000)}`,
-          ].filter(Boolean).join("\n");
-
-          const res = await fetch("https://api.anthropic.com/v1/messages",{
-            method:"POST",
-            headers:{"Content-Type":"application/json","x-api-key":apiKey,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
-            body:JSON.stringify({
-              model:"claude-sonnet-4-20250514", max_tokens:5000,
-              system:SYSTEM_PROMPT,
-              tools:[{type:"web_search_20250305",name:"web_search"}],
-              messages:[{role:"user",content:`${info}\n\nVariety, THR, Reddit, 익스트림무비 등 모든 소스를 웹 검색하여 종합 분석 JSON을 작성해주세요.`}],
-            }),
-          });
-          const data = await res.json();
-          if (data.error) throw new Error(data.error.message);
-          const texts=(data.content||[]).filter(b=>b.type==="text").map(b=>b.text);
-          const raw=texts[texts.length-1]||"";
-          const m=raw.match(/\{[\s\S]*\}/);
-          if (!m) throw new Error("결과 파싱 실패. 다시 시도해 주세요.");
-          const parsed=JSON.parse(m[0]);
-          saveHistory(parsed,fd);
-          setResult(parsed); setTab("overview"); setView("results");
-        } catch(err) {
-          setError(err.message); setView("form");
-        } finally { clearInterval(timerRef.current); }
-      };
-
-      const addToQueue = () => {
-        if (!form.titleEn?.trim()) return;
-        setBatch(q=>[...q,{...form}]);
-        setForm({titleEn:"",titleKo:"",director:"",cast:"",genre:"",country:"",year:"",status:"",source:"",synopsis:""});
-      };
-      const runQueue = async () => { const q=[...batch]; setBatch([]); for(const fd of q) await runAnalysis(fd); };
-
-      const share = () => {
-        const R=result;
-        const text=`[PRIZM 분석] ${R?.filmOverview?.title} (${R?.filmOverview?.koreanTitle}) — 구매 점수 ${R?.overallAssessment?.acquisitionScore}/10 · ${R?.overallAssessment?.recommendation}`;
-        if(navigator.share) { navigator.share({title:"PRIZM 영화 분석",text}); }
-        else { navigator.clipboard.writeText(text); setCopied("share"); setTimeout(()=>setCopied(""),2200); }
-      };
-
-      if (!apiKey) return <ApiKeyScreen onSave={saveApiKey}/>;
-
-      const R=result, ov=R?.filmOverview, sc=R?.overallAssessment?.acquisitionScore;
-      const stCfg=STATUS_CFG[ov?.status]||STATUS_CFG[form.status];
-      const recC=recColor(R?.overallAssessment?.recommendation);
-
-      const inp = { width:"100%",background:"var(--bg-primary)",border:"1px solid var(--border-secondary)",
-        borderRadius:"var(--radius-md)",color:"var(--text-primary)",padding:"10px 14px",fontSize:14 };
-
-      const F=(name,label,ph,req)=>(
-        <div key={name}>
-          <label style={{fontSize:11,color:"var(--text-secondary)",letterSpacing:"0.07em",textTransform:"uppercase",display:"block",marginBottom:6}}>
-            {label}{req&&<span style={{color:"#c9292b"}}> *</span>}
-          </label>
-          <input name={name} value={form[name]||""} placeholder={ph} style={inp}
-            onChange={e=>setForm(p=>({...p,[e.target.name]:e.target.value}))}/>
+        <div class="grid2">
+          <div><label class="form-label">영문 제목 <span style="color:#c9292b">*</span></label><input class="form-input" id="f-en" placeholder="e.g. The Substance"/></div>
+          <div><label class="form-label">한국어 제목</label><input class="form-input" id="f-ko" placeholder="e.g. 더 서브스턴스"/></div>
+          <div><label class="form-label">감독 <span style="color:#c9292b">*</span></label><input class="form-input" id="f-dir" placeholder="e.g. Coralie Fargeat"/></div>
+          <div><label class="form-label">주연배우</label><input class="form-input" id="f-cast" placeholder="e.g. Demi Moore, Margaret Qualley"/></div>
+          <div><label class="form-label">장르</label><input class="form-input" id="f-genre" placeholder="e.g. SF 스릴러 / 바디호러"/></div>
+          <div><label class="form-label">제작국가</label><input class="form-input" id="f-country" placeholder="e.g. 프랑스 · 영국"/></div>
+          <div><label class="form-label">제작연도</label><input class="form-input" id="f-year" placeholder="e.g. 2025"/></div>
+          <div><label class="form-label">원작 정보</label><input class="form-input" id="f-src" placeholder="e.g. 동명 소설 원작 (저자명)"/></div>
         </div>
-      );
-
-      return (
-        <div style={{minHeight:"100vh",background:"var(--bg-tertiary)"}}>
-          {/* ── SETTINGS MODAL ── */}
-          {showSettings&&(
-            <div onClick={()=>setShowSettings(false)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.4)",zIndex:100,display:"flex",alignItems:"center",justifyContent:"center",padding:24}}>
-              <div onClick={e=>e.stopPropagation()} style={{background:"var(--bg-primary)",borderRadius:16,padding:"32px 28px",maxWidth:400,width:"100%",boxShadow:"0 20px 60px rgba(0,0,0,0.2)"}}>
-                <h2 style={{fontFamily:"'Playfair Display',serif",fontSize:20,fontWeight:700,marginBottom:8}}>설정</h2>
-                <p style={{fontSize:13,color:"var(--text-secondary)",lineHeight:1.6,marginBottom:24}}>
-                  현재 API 키: <span style={{fontFamily:"'DM Mono',monospace",fontSize:12,color:"var(--text-tertiary)"}}>
-                    {apiKey.slice(0,12)}…{apiKey.slice(-4)}</span>
-                </p>
-                <button onClick={clearApiKey} style={{width:"100%",background:"var(--bg-danger)",border:"1px solid var(--border-danger)",borderRadius:10,color:"var(--text-danger)",padding:"12px",fontSize:14,cursor:"pointer"}}>
-                  API 키 삭제 및 로그아웃
-                </button>
-                <button onClick={()=>setShowSettings(false)} style={{width:"100%",background:"transparent",border:"1px solid var(--border-secondary)",borderRadius:10,color:"var(--text-secondary)",padding:"12px",fontSize:14,cursor:"pointer",marginTop:8}}>
-                  닫기
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* ── HEADER ── */}
-          <header className="no-print" style={{background:"#1a1928",padding:"0 22px",display:"flex",alignItems:"center",height:54,gap:0,borderBottom:"1px solid rgba(255,255,255,0.05)"}}>
-            <div style={{display:"flex",gap:4,marginRight:14}}>
-              {[...Array(5)].map((_,i)=>(
-                <div key={i} style={{width:7,height:5,background:"rgba(255,255,255,0.15)",borderRadius:1}}/>
-              ))}
-            </div>
-            <div style={{cursor:"pointer"}} onClick={()=>setView("form")}>
-              <div style={{fontFamily:"'Playfair Display',serif",fontSize:22,fontWeight:900,color:"#c9292b",lineHeight:1,letterSpacing:"0.02em"}}>PRIZM</div>
-              <div style={{fontSize:9,color:"rgba(255,255,255,0.3)",letterSpacing:"0.15em",textTransform:"uppercase",marginTop:2}}>Film Acquisition Intelligence</div>
-            </div>
-            <div style={{flex:1}}/>
-            {/* Export buttons (results only) */}
-            {view==="results"&&(
-              <div className="no-print" style={{display:"flex",gap:6,marginRight:14}}>
-                {[
-                  {label:copied==="share"?"✓ 복사":"공유",action:share,key:"share"},
-                  {label:"CSV",action:()=>downloadCSV(R,ov?.title),key:"csv"},
-                  {label:"텍스트",action:()=>downloadTXT(R,ov?.title),key:"txt"},
-                  {label:"인쇄/PDF",action:()=>window.print(),key:"pdf"},
-                ].map(btn=>(
-                  <button key={btn.key} onClick={btn.action} style={{background:"transparent",border:"1px solid rgba(255,255,255,0.15)",
-                    borderRadius:8,color:copied==="share"&&btn.key==="share"?"#4ade80":"rgba(255,255,255,0.65)",
-                    padding:"5px 13px",fontSize:12,cursor:"pointer"}}>
-                    {btn.label}
-                  </button>
-                ))}
-              </div>
-            )}
-            <nav style={{display:"flex",gap:3}}>
-              {[{id:"form",label:"분석"},{id:"history",label:`히스토리${history.length?" "+history.length:""}`}].map(n=>(
-                <button key={n.id} onClick={()=>setView(n.id)} style={{background:view===n.id?"rgba(255,255,255,0.1)":"transparent",
-                  color:view===n.id?"rgba(255,255,255,0.9)":"rgba(255,255,255,0.45)",
-                  border:"none",borderRadius:8,padding:"6px 13px",fontSize:13,cursor:"pointer",fontWeight:view===n.id?500:400}}>
-                  {n.label}
-                </button>
-              ))}
-              <button onClick={()=>setShowSettings(true)} style={{background:"transparent",border:"none",color:"rgba(255,255,255,0.35)",
-                borderRadius:8,padding:"6px 10px",fontSize:16,cursor:"pointer"}} title="설정">⚙</button>
-            </nav>
-          </header>
-
-          <main style={{maxWidth:900,margin:"0 auto",padding:"28px 20px"}}>
-
-            {/* ══ FORM VIEW ══ */}
-            {view==="form"&&(
-              <div className="fade-up">
-                <div style={{marginBottom:24}}>
-                  <h1 style={{fontFamily:"'Playfair Display',serif",fontSize:28,fontWeight:700,margin:"0 0 8px",letterSpacing:"-0.02em",lineHeight:1.2}}>
-                    영화 구매 분석
-                  </h1>
-                  <p style={{color:"var(--text-secondary)",fontSize:14,margin:0,lineHeight:1.65}}>
-                    영화 정보를 입력하면 Variety · THR · IMDb · Reddit · 익스트림무비 등을 자동 검색하여 한국 배급 가능성 분석 리포트를 생성합니다.
-                  </p>
-                </div>
-
-                {error&&(
-                  <div style={{background:"var(--bg-danger)",border:"1px solid var(--border-danger)",borderRadius:"var(--radius-md)",padding:"10px 14px",marginBottom:16,color:"var(--text-danger)",fontSize:13}}>
-                    ⚠ {error}
-                  </div>
-                )}
-
-                <Card>
-                  {/* Status */}
-                  <div style={{marginBottom:22}}>
-                    <label style={{fontSize:11,color:"var(--text-secondary)",letterSpacing:"0.07em",textTransform:"uppercase",display:"block",marginBottom:9}}>
-                      제작 상태
-                    </label>
-                    <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-                      {Object.entries(STATUS_CFG).map(([val,cfg])=>(
-                        <button key={val} onClick={()=>setForm(p=>({...p,status:p.status===val?"":val}))}
-                          style={{background:form.status===val?cfg.bg:"transparent",color:form.status===val?cfg.c:"var(--text-secondary)",
-                            border:`1px solid ${form.status===val?cfg.border:"var(--border-tertiary)"}`,
-                            borderRadius:20,padding:"6px 16px",fontSize:13,cursor:"pointer",fontWeight:form.status===val?500:400,transition:"all .15s"}}>
-                          {cfg.label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="grid-2" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"18px 24px",marginBottom:18}}>
-                    {F("titleEn","영문 제목","e.g. The Substance",true)}
-                    {F("titleKo","한국어 제목","e.g. 더 서브스턴스")}
-                    {F("director","감독","e.g. Coralie Fargeat",true)}
-                    {F("cast","주연배우","e.g. Demi Moore, Margaret Qualley")}
-                    {F("genre","장르","e.g. SF 스릴러 / 바디호러")}
-                    {F("country","제작국가","e.g. 프랑스 · 영국")}
-                    {F("year","제작연도","e.g. 2025")}
-                    {F("source","원작 정보","e.g. 동명 소설 원작 (저자명)")}
-                  </div>
-                  <div style={{marginBottom:22}}>
-                    <label style={{fontSize:11,color:"var(--text-secondary)",letterSpacing:"0.07em",textTransform:"uppercase",display:"block",marginBottom:6}}>
-                      시놉시스 <span style={{color:"var(--text-tertiary)",textTransform:"none",fontWeight:400,letterSpacing:0}}>(선택)</span>
-                    </label>
-                    <textarea name="synopsis" value={form.synopsis||""} placeholder="줄거리 또는 시놉시스를 입력하세요."
-                      onChange={e=>setForm(p=>({...p,synopsis:e.target.value}))}
-                      style={{...inp,height:80,resize:"vertical"}}/>
-                  </div>
-
-                  <div style={{marginBottom:22}}>
-                    <label style={{fontSize:11,color:"var(--text-secondary)",letterSpacing:"0.07em",textTransform:"uppercase",display:"block",marginBottom:6}}>
-                      배급사 라인업 파일 <span style={{color:"var(--text-tertiary)",textTransform:"none",fontWeight:400,letterSpacing:0}}>(선택 — 엑셀/CSV, 개봉일정 반영)</span>
-                    </label>
-                    {lineup?(
-                      <div style={{display:"flex",alignItems:"center",gap:12,padding:"10px 14px",background:"rgba(5,150,105,0.06)",border:"1px solid rgba(5,150,105,0.2)",borderRadius:"var(--radius-md)"}}>
-                        <span style={{fontSize:20}}>📋</span>
-                        <div style={{flex:1}}>
-                          <p style={{fontSize:13,fontWeight:500,color:"#059669",margin:0}}>{lineupName}</p>
-                          <p style={{fontSize:11,color:"var(--text-tertiary)",margin:"2px 0 0"}}>{Array.isArray(lineup)?lineup.length:Object.keys(lineup).length}행 데이터 로드됨 — 배급 시기 추천에 반영됩니다</p>
-                        </div>
-                        <button onClick={()=>{setLineup(null);setLineupName("");}} style={{background:"none",border:"none",color:"var(--text-tertiary)",cursor:"pointer",fontSize:18,padding:"0 4px",lineHeight:1}}>×</button>
-                      </div>
-                    ):(
-                      <div
-                        onClick={()=>document.getElementById("lineup-input").click()}
-                        onDragOver={e=>{e.preventDefault();e.currentTarget.style.borderColor="#c9292b";}}
-                        onDragLeave={e=>{e.currentTarget.style.borderColor="";}}
-                        onDrop={e=>{e.preventDefault();e.currentTarget.style.borderColor="";const f=e.dataTransfer.files[0];if(f)parseLineup(f);}}
-                        style={{border:"1.5px dashed var(--border-secondary)",borderRadius:"var(--radius-md)",padding:"18px",textAlign:"center",background:"var(--bg-secondary)",cursor:"pointer",transition:"border-color .15s"}}>
-                        <p style={{fontSize:13,color:"var(--text-secondary)",margin:0}}>📁 클릭하거나 파일을 여기에 드래그</p>
-                        <p style={{fontSize:11,color:"var(--text-tertiary)",margin:"4px 0 0"}}>.xlsx · .xls · .csv 지원</p>
-                        <input id="lineup-input" type="file" accept=".xlsx,.xls,.csv" style={{display:"none"}} onChange={e=>{const f=e.target.files?.[0];if(f)parseLineup(f);e.target.value="";}}/>
-                      </div>
-                    )}
-                  </div>
-                    <button onClick={()=>runAnalysis(form)} style={{flex:1,background:"#c9292b",border:"none",borderRadius:"var(--radius-md)",
-                      color:"#fff",padding:"13px 20px",fontSize:15,fontWeight:500,cursor:"pointer",letterSpacing:"-0.01em"}}>
-                      🔍  AI 분석 시작
-                    </button>
-                    <button onClick={addToQueue} title="배치 큐에 추가" style={{background:"var(--bg-secondary)",border:"0.5px solid var(--border-secondary)",
-                      borderRadius:"var(--radius-md)",color:"var(--text-secondary)",padding:"13px 18px",fontSize:13,cursor:"pointer",whiteSpace:"nowrap"}}>
-                      + 큐
-                    </button>
-                  </div>
-                </Card>
-
-                {/* Batch Queue */}
-                {batch.length>0&&(
-                  <Card>
-                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
-                      <div>
-                        <SH>배치 큐</SH>
-                        <p style={{fontSize:12,color:"var(--text-tertiary)",margin:"-10px 0 0"}}>{batch.length}편 대기 중</p>
-                      </div>
-                      <button onClick={runQueue} style={{background:"#c9292b",border:"none",borderRadius:8,color:"#fff",padding:"8px 20px",fontSize:13,cursor:"pointer",fontWeight:500}}>
-                        모두 분석 →
-                      </button>
-                    </div>
-                    {batch.map((q,i)=>(
-                      <div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"9px 12px",background:"var(--bg-secondary)",borderRadius:8,marginBottom:6}}>
-                        <div style={{display:"flex",gap:10,alignItems:"center"}}>
-                          <span style={{fontSize:12,color:"var(--text-tertiary)",fontFamily:"'DM Mono',monospace"}}>{String(i+1).padStart(2,"0")}</span>
-                          <div>
-                            <span style={{fontSize:13,fontWeight:500}}>{q.titleEn}</span>
-                            {q.director&&<span style={{fontSize:12,color:"var(--text-secondary)",marginLeft:8}}>· {q.director}</span>}
-                          </div>
-                        </div>
-                        <button onClick={()=>setBatch(bq=>bq.filter((_,j)=>j!==i))}
-                          style={{background:"none",border:"none",color:"var(--text-tertiary)",cursor:"pointer",fontSize:18,padding:"0 6px",lineHeight:1}}>×</button>
-                      </div>
-                    ))}
-                  </Card>
-                )}
-              </div>
-            )}
-
-            {/* ══ LOADING VIEW ══ */}
-            {view==="loading"&&(
-              <div style={{textAlign:"center",padding:"80px 0"}}>
-                <div style={{width:60,height:60,margin:"0 auto 24px",borderRadius:"50%",border:"2px solid var(--border-tertiary)",borderTopColor:"#c9292b",animation:"spin 1s linear infinite"}}/>
-                <p style={{fontFamily:"'Playfair Display',serif",fontSize:24,fontWeight:700,color:"var(--text-primary)",margin:"0 0 8px"}}>분석 진행 중</p>
-                <p style={{color:"var(--text-secondary)",fontSize:14,margin:"0 0 32px"}}>{LOAD_MSGS[loadStep]}</p>
-                <div style={{display:"flex",gap:6,justifyContent:"center"}}>
-                  {LOAD_MSGS.map((_,i)=>(
-                    <div key={i} style={{height:5,borderRadius:3,width:i===loadStep?22:7,background:i===loadStep?"#c9292b":"var(--border-tertiary)",transition:"all .3s ease"}}/>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* ══ RESULTS VIEW ══ */}
-            {view==="results"&&R&&(
-              <div className="fade-up">
-                {/* Film title bar */}
-                <div style={{marginBottom:20}}>
-                  <div style={{display:"flex",flexWrap:"wrap",alignItems:"center",gap:7,marginBottom:9}}>
-                    {stCfg&&<Badge c={stCfg.c} bg={stCfg.bg} border={stCfg.border}>{stCfg.label}</Badge>}
-                    {ov?.imdbRating&&ov.imdbRating!=="N/A"&&<Badge c="#d97706" bg="rgba(217,119,6,0.1)">⭐ IMDb {ov.imdbRating}</Badge>}
-                    {ov?.rtScore&&ov.rtScore!=="N/A"&&<Badge c="#e55a00" bg="rgba(229,90,0,0.1)">🍅 RT {ov.rtScore}</Badge>}
-                    {R.overallAssessment?.recommendation&&(
-                      <Badge c={recC} bg={recC+"18"} border={recC+"40"} style={{fontWeight:600}}>
-                        {R.overallAssessment.recommendation}
-                      </Badge>
-                    )}
-                  </div>
-                  <h1 style={{fontFamily:"'Playfair Display',serif",fontSize:26,fontWeight:700,margin:"0 0 4px",letterSpacing:"-0.02em",lineHeight:1.2}}>
-                    {ov?.title}
-                    {ov?.year&&<span style={{color:"var(--text-tertiary)",fontSize:17,fontWeight:400,marginLeft:10}}>({ov.year})</span>}
-                  </h1>
-                  {ov?.koreanTitle&&<p style={{color:"var(--text-secondary)",fontSize:15,margin:0}}>{ov.koreanTitle}</p>}
-                </div>
-
-                {/* Tabs */}
-                <div className="no-print" style={{display:"flex",gap:4,overflowX:"auto",marginBottom:18,paddingBottom:2}}>
-                  {TABS.map(t=>(
-                    <button key={t.id} onClick={()=>setTab(t.id)} style={{background:tab===t.id?"var(--bg-primary)":"transparent",
-                      color:tab===t.id?"var(--text-primary)":"var(--text-secondary)",
-                      border:tab===t.id?"0.5px solid var(--border-secondary)":"0.5px solid transparent",
-                      borderRadius:"var(--radius-md)",padding:"8px 14px",fontSize:13,cursor:"pointer",whiteSpace:"nowrap",
-                      fontWeight:tab===t.id?500:400,transition:"all .15s"}}>
-                      {t.label}
-                    </button>
-                  ))}
-                  <div style={{flex:1}}/>
-                  <button onClick={()=>{setResult(null);setView("form");}} className="no-print" style={{background:"transparent",border:"0.5px solid var(--border-tertiary)",
-                    borderRadius:"var(--radius-md)",color:"var(--text-tertiary)",padding:"8px 14px",fontSize:12,cursor:"pointer"}}>
-                    + 새 분석
-                  </button>
-                </div>
-
-                {/* ── 개요 ── */}
-                {tab==="overview"&&(
-                  <Card>
-                    <SH>영화 기본 정보</SH>
-                    {stCfg&&(
-                      <div style={{display:"flex",flexWrap:"wrap",alignItems:"center",gap:10,padding:"10px 14px",background:stCfg.bg,borderRadius:9,border:`1px solid ${stCfg.border}`,marginBottom:16}}>
-                        <span style={{fontSize:13,fontWeight:600,color:stCfg.c}}>{stCfg.label}</span>
-                        {ov?.releaseDate&&!["미정",""].includes(ov.releaseDate)&&(
-                          <span style={{fontSize:12,color:stCfg.c,opacity:0.75}}>— 개봉 예정: {ov.releaseDate}</span>
-                        )}
-                      </div>
-                    )}
-                    <Row label="시놉시스" value={ov?.synopsis}/>
-                    <Row label="감독" value={R.directorAnalysis?.name}/>
-                    <Row label="장르" value={ov?.genre}/>
-                    <Row label="제작국가" value={ov?.country}/>
-                    <Row label="상영시간" value={ov?.runtime}/>
-                    <Row label="IMDb 평점" value={ov?.imdbRating!=="N/A"?ov?.imdbRating:null}/>
-                    <Row label="로튼토마토" value={ov?.rtScore!=="N/A"?ov?.rtScore:null}/>
-                    <Row label="영화제 이력" value={ov?.festivalHistory!=="해당없음"?ov?.festivalHistory:null}/>
-                    <Row label="수상 이력" value={ov?.awards!=="해당없음"?ov?.awards:null}/>
-                  </Card>
-                )}
-
-                {/* ── 언론·커뮤니티 ── */}
-                {tab==="buzz"&&(()=>{
-                  const bz=R.tradePressAndBuzz;
-                  if (!bz) return <Card><p style={{color:"var(--text-tertiary)",textAlign:"center",padding:"20px 0"}}>데이터 없음</p></Card>;
-                  const sentCfg=SENT_CFG[bz.overallSentiment]||SENT_CFG.unknown;
-                  return (
-                    <>
-                      <Card>
-                        <div style={{display:"flex",flexWrap:"wrap",gap:20,alignItems:"flex-start"}}>
-                          <div>
-                            <p style={{fontSize:11,color:"var(--text-tertiary)",textTransform:"uppercase",letterSpacing:"0.07em",margin:"0 0 8px"}}>전반적 반응</p>
-                            <Badge c={sentCfg.c} bg={sentCfg.bg} style={{fontSize:14,padding:"5px 16px"}}>{sentCfg.label}</Badge>
-                          </div>
-                          {bz.buzzSummary&&(
-                            <p style={{fontSize:14,color:"var(--text-secondary)",lineHeight:1.7,flex:1,margin:0,maxWidth:580,paddingTop:2}}>{bz.buzzSummary}</p>
-                          )}
-                        </div>
-                      </Card>
-                      {bz.tradeArticles?.length>0&&(
-                        <Card>
-                          <SH>해외 영화 전문지 <span style={{fontSize:12,fontWeight:400,fontFamily:"'DM Sans',sans-serif",color:"var(--text-tertiary)"}}>Variety · THR · Screen International 등</span></SH>
-                          {bz.tradeArticles.map((a,i)=>(
-                            <LinkRow key={i} title={a.title} source={a.source} date={a.date} url={a.url} sentimentKey="unknown" note={a.summary}/>
-                          ))}
-                        </Card>
-                      )}
-                      {bz.festivalReviews?.length>0&&(
-                        <Card>
-                          <SH>영화제 시사 리뷰</SH>
-                          {bz.festivalReviews.map((a,i)=>(
-                            <LinkRow key={i} title={a.title} source={a.source} url={a.url} sentimentKey={a.sentiment}/>
-                          ))}
-                        </Card>
-                      )}
-                      {bz.communityBuzz?.length>0&&(
-                        <Card>
-                          <SH>커뮤니티 반응 <span style={{fontSize:12,fontWeight:400,fontFamily:"'DM Sans',sans-serif",color:"var(--text-tertiary)"}}>Reddit · 익스트림무비 · 무비코리아 등</span></SH>
-                          {bz.communityBuzz.map((b,i)=>(
-                            <LinkRow key={i} title={b.title} source={b.platform} url={b.url} sentimentKey={b.sentiment} note={b.note}/>
-                          ))}
-                        </Card>
-                      )}
-                    </>
-                  );
-                })()}
-
-                {/* ── 감독·배우 ── */}
-                {tab==="cast"&&(
-                  <>
-                    {R.directorAnalysis&&(
-                      <Card>
-                        <SH>감독</SH>
-                        <div style={{display:"flex",flexWrap:"wrap",alignItems:"center",gap:10,marginBottom:14}}>
-                          <span style={{fontFamily:"'Playfair Display',serif",fontSize:20,fontWeight:700}}>{R.directorAnalysis.name}</span>
-                          {R.directorAnalysis.nationality&&<Badge>{R.directorAnalysis.nationality}</Badge>}
-                        </div>
-                        <p style={{fontSize:14,color:"var(--text-secondary)",lineHeight:1.72,margin:"0 0 18px"}}>{R.directorAnalysis.careerSummary}</p>
-                        {R.directorAnalysis.majorWorks?.length>0&&(
-                          <div style={{marginBottom:18,overflowX:"auto"}}>
-                            <p style={{fontSize:11,color:"var(--text-tertiary)",textTransform:"uppercase",letterSpacing:"0.07em",marginBottom:10}}>주요 작품 박스오피스</p>
-                            <table style={{width:"100%",borderCollapse:"collapse",fontSize:13}}>
-                              <thead>
-                                <tr style={{borderBottom:"0.5px solid var(--border-secondary)"}}>
-                                  {["원제","한국개봉명","연도","글로벌 흥행","한국 누적관객"].map(h=>(
-                                    <th key={h} style={{textAlign:"left",color:"var(--text-tertiary)",padding:"5px 10px",fontWeight:400,fontSize:11,textTransform:"uppercase",letterSpacing:"0.05em"}}>{h}</th>
-                                  ))}
-                                </tr>
-                              </thead>
-                              <tbody>
-                                {R.directorAnalysis.majorWorks.map((w,i)=>(
-                                  <tr key={i} style={{borderBottom:"0.5px solid var(--border-tertiary)"}}>
-                                    <td style={{padding:"10px",fontWeight:500}}>{w.title}</td>
-                                    <td style={{padding:"10px",color:"var(--text-primary)"}}>{w.koreanTitle||"—"}</td>
-                                    <td style={{padding:"10px",color:"var(--text-tertiary)",fontFamily:"'DM Mono',monospace",fontSize:12}}>{w.year}</td>
-                                    <td style={{padding:"10px",color:"var(--text-secondary)"}}>{w.globalBO||"—"}</td>
-                                    <td style={{padding:"10px",color:w.koreanAudience&&w.koreanAudience!=="미개봉"&&w.koreanAudience!=="정보없음"?"#d97706":"var(--text-tertiary)",fontFamily:"'DM Mono',monospace",fontSize:12}}>{w.koreanAudience||w.koreanBO||"—"}</td>
-                                  </tr>
-                                ))}
-                              </tbody>
-                            </table>
-                          </div>
-                        )}
-                        <Row label="한국 시장" value={R.directorAnalysis.koreanMarketSummary}/>
-                        <div style={{background:"var(--bg-secondary)",borderRadius:8,padding:"12px 16px",marginTop:8}}>
-                          <p style={{fontSize:11,color:"var(--text-tertiary)",margin:"0 0 5px",textTransform:"uppercase",letterSpacing:"0.07em"}}>구매 메리트</p>
-                          <p style={{fontSize:14,color:"var(--text-primary)",margin:0,lineHeight:1.65}}>{R.directorAnalysis.acquisitionValue}</p>
-                        </div>
-                      </Card>
-                    )}
-                    {R.castAnalysis?.map((actor,i)=>{
-                      const rcMap={높음:{c:"#059669",bg:"rgba(5,150,105,0.1)"},중간:{c:"#d97706",bg:"rgba(217,119,6,0.1)"},낮음:{c:"#6b7280",bg:"rgba(107,114,128,0.1)"}};
-                      const rc=rcMap[actor.koreanRecognition]||rcMap["낮음"];
-                      return (
-                        <Card key={i}>
-                          <div style={{display:"flex",flexWrap:"wrap",alignItems:"center",gap:8,marginBottom:12}}>
-                            <span style={{fontFamily:"'Playfair Display',serif",fontSize:18,fontWeight:700}}>{actor.name}</span>
-                            {actor.nationality&&<Badge>{actor.nationality}</Badge>}
-                            {actor.role&&<span style={{fontSize:13,color:"var(--text-tertiary)"}}>役 {actor.role}</span>}
-                            {actor.koreanRecognition&&<Badge c={rc.c} bg={rc.bg}>한국 인지도 {actor.koreanRecognition}</Badge>}
-                          </div>
-                          {actor.majorWorks?.map((w,j)=>(
-                            <div key={j} style={{fontSize:13,color:"var(--text-secondary)",marginBottom:6,paddingLeft:2}}>
-                              <span style={{color:"var(--text-primary)",fontWeight:500}}>{w.title}</span>
-                              {w.koreanTitle&&w.koreanTitle!=="미개봉"&&(
-                                <span style={{color:"var(--text-secondary)"}}> / {w.koreanTitle}</span>
-                              )}
-                              <span style={{color:"var(--text-tertiary)"}}> ({w.year})</span>
-                              {w.koreanAudience&&w.koreanAudience!=="미개봉"&&w.koreanAudience!=="정보없음"&&(
-                                <span style={{color:"#d97706",fontFamily:"'DM Mono',monospace",fontSize:11,marginLeft:6}}>🇰🇷 {w.koreanAudience}</span>
-                              )}
-                              {w.note&&<span style={{color:"var(--text-tertiary)"}}> — {w.note}</span>}
-                            </div>
-                          ))}
-                          <p style={{fontSize:13,color:"var(--text-secondary)",margin:"10px 0 0",lineHeight:1.65,borderTop:"0.5px solid var(--border-tertiary)",paddingTop:10}}>{actor.marketingValue}</p>
-                        </Card>
-                      );
-                    })}
-                  </>
-                )}
-
-                {/* ── 시장 분석 ── */}
-                {tab==="market"&&(
-                  <>
-                    <div className="grid-2" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14,marginBottom:14}}>
-                      <Card style={{marginBottom:0}}>
-                        <SH accent="#059669">기회 요인</SH>
-                        {R.marketAnalysis?.opportunities?.map((o,i)=>(
-                          <div key={i} style={{borderLeft:"3px solid rgba(5,150,105,0.35)",paddingLeft:14,marginBottom:16}}>
-                            <p style={{fontSize:14,fontWeight:500,color:"#059669",margin:"0 0 4px"}}>{o.factor}</p>
-                            <p style={{fontSize:13,color:"var(--text-secondary)",margin:0,lineHeight:1.65}}>{o.description}</p>
-                          </div>
-                        ))}
-                      </Card>
-                      <Card style={{marginBottom:0}}>
-                        <SH accent="#c9292b">위협 요인</SH>
-                        {R.marketAnalysis?.threats?.map((t,i)=>(
-                          <div key={i} style={{borderLeft:"3px solid rgba(201,41,43,0.35)",paddingLeft:14,marginBottom:16}}>
-                            <p style={{fontSize:14,fontWeight:500,color:"#c9292b",margin:"0 0 4px"}}>{t.factor}</p>
-                            <p style={{fontSize:13,color:"var(--text-secondary)",margin:0,lineHeight:1.65}}>{t.description}</p>
-                          </div>
-                        ))}
-                      </Card>
-                    </div>
-                    {R.marketAnalysis?.comparableFilms?.length>0&&(
-                      <Card>
-                        <SH>유사 작품 한국 흥행 비교 <span style={{fontSize:11,fontWeight:400,fontFamily:"'DM Sans',sans-serif",color:"var(--text-tertiary)"}}>KOBIS 누적관객수 기준</span></SH>
-                        <div style={{overflowX:"auto"}}>
-                          <table style={{width:"100%",borderCollapse:"collapse",fontSize:13}}>
-                            <thead>
-                              <tr style={{borderBottom:"0.5px solid var(--border-secondary)"}}>
-                                {["원제","한국개봉명","누적관객수","비교 근거"].map(h=>(
-                                  <th key={h} style={{textAlign:"left",color:"var(--text-tertiary)",padding:"5px 10px",fontWeight:400,fontSize:11,textTransform:"uppercase",letterSpacing:"0.05em"}}>{h}</th>
-                                ))}
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {R.marketAnalysis.comparableFilms.map((f,i)=>(
-                                <tr key={i} style={{borderBottom:"0.5px solid var(--border-tertiary)"}}>
-                                  <td style={{padding:"10px",fontWeight:500,color:"var(--text-secondary)",fontSize:12}}>{f.title}</td>
-                                  <td style={{padding:"10px",fontWeight:500,color:"var(--text-primary)"}}>{f.koreanTitle||f.title}</td>
-                                  <td style={{padding:"10px",color:"#d97706",fontFamily:"'DM Mono',monospace",fontSize:12}}>{f.koreanAudience||f.koreanBO||"—"}</td>
-                                  <td style={{padding:"10px",color:"var(--text-secondary)"}}>{f.relevance}</td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        </div>
-                        {R.marketAnalysis.optimalReleaseWindow&&(
-                          <div style={{marginTop:16,background:"var(--bg-secondary)",borderRadius:8,padding:"12px 16px"}}>
-                            <p style={{fontSize:11,color:"var(--text-tertiary)",margin:"0 0 5px",textTransform:"uppercase",letterSpacing:"0.07em"}}>추천 개봉 시즌</p>
-                            <p style={{fontSize:14,margin:0}}>{R.marketAnalysis.optimalReleaseWindow}</p>
-                          </div>
-                        )}
-                      </Card>
-                    )}
-                  </>
-                )}
-
-                {/* ── 마케팅 플랜 ── */}
-                {tab==="marketing"&&(()=>{
-                  const mp=R.marketingPlan, ts=mp?.theatricalStrategy;
-                  return (
-                    <>
-                      <Card>
-                        <SH>타겟 & 키워드</SH>
-                        <div className="grid-2" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:20,marginBottom:20}}>
-                          <div>
-                            <p style={{fontSize:11,color:"var(--text-tertiary)",textTransform:"uppercase",letterSpacing:"0.07em",margin:"0 0 8px"}}>핵심 타겟</p>
-                            <p style={{fontSize:14,margin:0,lineHeight:1.65}}>{mp?.primaryTarget}</p>
-                          </div>
-                          <div>
-                            <p style={{fontSize:11,color:"var(--text-tertiary)",textTransform:"uppercase",letterSpacing:"0.07em",margin:"0 0 8px"}}>부차 타겟</p>
-                            <p style={{fontSize:14,color:"var(--text-secondary)",margin:0,lineHeight:1.65}}>{mp?.secondaryTarget}</p>
-                          </div>
-                        </div>
-                        {mp?.keywords?.length>0&&(
-                          <div>
-                            <p style={{fontSize:11,color:"var(--text-tertiary)",textTransform:"uppercase",letterSpacing:"0.07em",margin:"0 0 10px"}}>마케팅 키워드</p>
-                            {mp.keywords.map((k,i)=>(
-                              <span key={i} style={{display:"inline-block",background:"var(--bg-secondary)",color:"var(--text-secondary)",border:"0.5px solid var(--border-tertiary)",borderRadius:20,padding:"4px 12px",fontSize:13,margin:"2px 4px 2px 0"}}>#{k}</span>
-                            ))}
-                          </div>
-                        )}
-                      </Card>
-                      <Card>
-                        <SH>카피라인 제안</SH>
-                        {mp?.taglines?.map((t,i)=>(
-                          <div key={i} style={{background:"var(--bg-secondary)",borderLeft:"3px solid #c9292b",borderRadius:"0 8px 8px 0",padding:"14px 18px",marginBottom:10}}>
-                            <span style={{fontFamily:"'Playfair Display',serif",fontSize:17,color:"var(--text-primary)",fontStyle:"italic"}}>"{t}"</span>
-                          </div>
-                        ))}
-                      </Card>
-                      {ts&&(
-                        <Card>
-                          <SH accent="#c9292b">극장 배급 전략</SH>
-                          <div style={{background:"var(--bg-secondary)",borderRadius:10,padding:"16px 18px",marginBottom:16}}>
-                            <p style={{fontSize:11,color:"var(--text-tertiary)",textTransform:"uppercase",letterSpacing:"0.07em",margin:"0 0 8px"}}>개봉 유형</p>
-                            <p style={{fontSize:16,fontWeight:500,color:"#c9292b",margin:0,lineHeight:1.4}}>{ts.releaseType}</p>
-                          </div>
-                          <Row label="추천 개봉 시기" value={ts.releaseTimingSuggestion}/>
-                          <Row label="추천 상영관 수" value={ts.recommendedScreenCount}/>
-                          <Row label="극장 체인 전략" value={ts.targetTheatreChains}/>
-                          <Row label="경쟁작 분석" value={ts.competitionAnalysis}/>
-                          <Row label="OTT 전환 전략" value={ts.platformWindowStrategy}/>
-                        </Card>
-                      )}
-                      {mp?.keySellingPoints?.length>0&&(
-                        <Card>
-                          <SH>핵심 셀링 포인트</SH>
-                          {mp.keySellingPoints.map((sp,i)=>(
-                            <div key={i} style={{display:"flex",gap:12,marginBottom:12,alignItems:"flex-start"}}>
-                              <span style={{color:"#c9292b",fontSize:13,flexShrink:0,marginTop:3}}>◆</span>
-                              <p style={{fontSize:14,margin:0,lineHeight:1.65}}>{sp}</p>
-                            </div>
-                          ))}
-                        </Card>
-                      )}
-                      {mp?.platformStrategy&&(
-                        <Card>
-                          <SH>디지털 · SNS · OTT 플랫폼 전략</SH>
-                          <p style={{fontSize:14,color:"var(--text-secondary)",margin:0,lineHeight:1.75}}>{mp.platformStrategy}</p>
-                        </Card>
-                      )}
-                    </>
-                  );
-                })()}
-
-                {/* ── 보도자료 ── */}
-                {tab==="press"&&(
-                  <Card>
-                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:18}}>
-                      <SH>보도자료 초안</SH>
-                      <button onClick={()=>{navigator.clipboard.writeText(R.pressReleaseDraft||"");setCopied("press");setTimeout(()=>setCopied(""),2200);}}
-                        style={{background:copied==="press"?"var(--bg-success)":"var(--bg-secondary)",
-                          border:`0.5px solid ${copied==="press"?"var(--border-success)":"var(--border-secondary)"}`,
-                          borderRadius:8,color:copied==="press"?"var(--text-success)":"var(--text-secondary)",
-                          padding:"7px 18px",fontSize:13,cursor:"pointer",transition:"all .2s"}}>
-                        {copied==="press"?"✓ 복사됨":"복사"}
-                      </button>
-                    </div>
-                    <div style={{background:"var(--bg-secondary)",borderRadius:10,padding:"22px 24px",lineHeight:1.9,fontSize:14.5,whiteSpace:"pre-wrap"}}>
-                      {R.pressReleaseDraft}
-                    </div>
-                    <p style={{fontSize:12,color:"var(--text-tertiary)",margin:"10px 0 0",textAlign:"right"}}>* AI 생성 초안 — 개봉 확정 후 날짜·배급사명 등 수정하여 사용하세요.</p>
-                  </Card>
-                )}
-
-                {/* ── 종합 평가 ── */}
-                {tab==="verdict"&&(
-                  <Card>
-                    <div style={{display:"flex",gap:24,alignItems:"flex-start",flexWrap:"wrap",marginBottom:24}}>
-                      <div style={{textAlign:"center",minWidth:100}}>
-                        <div style={{fontFamily:"'Playfair Display',serif",fontSize:72,fontWeight:900,color:scoreColor(sc),lineHeight:1}}>{sc||"—"}</div>
-                        <div style={{fontSize:12,color:"var(--text-tertiary)",marginTop:4}}>/10점</div>
-                      </div>
-                      <div style={{flex:1}}>
-                        {R.overallAssessment?.recommendation&&(
-                          <div style={{display:"inline-block",background:recC+"15",color:recC,border:`1px solid ${recC}40`,borderRadius:9,padding:"8px 20px",fontSize:15,fontWeight:600,marginBottom:14}}>
-                            {R.overallAssessment.recommendation}
-                          </div>
-                        )}
-                        <Row label="예상 관객 수" value={R.overallAssessment?.expectedAudienceRange}/>
-                      </div>
-                    </div>
-                    {R.overallAssessment?.keyRisks&&(
-                      <div style={{background:"var(--bg-danger)",border:"1px solid var(--border-danger)",borderRadius:9,padding:"14px 18px",marginBottom:18}}>
-                        <p style={{fontSize:12,color:"var(--text-danger)",margin:"0 0 5px",fontWeight:600}}>핵심 리스크</p>
-                        <p style={{fontSize:14,margin:0,lineHeight:1.65}}>{R.overallAssessment.keyRisks}</p>
-                      </div>
-                    )}
-                    {R.overallAssessment?.finalOpinion&&(
-                      <div>
-                        <p style={{fontSize:11,color:"var(--text-tertiary)",textTransform:"uppercase",letterSpacing:"0.07em",margin:"0 0 10px"}}>종합 의견</p>
-                        <p style={{fontSize:14,lineHeight:1.85,margin:0}}>{R.overallAssessment.finalOpinion}</p>
-                      </div>
-                    )}
-                  </Card>
-                )}
-              </div>
-            )}
-
-            {/* ══ HISTORY VIEW ══ */}
-            {view==="history"&&(
-              <div className="fade-up">
-                <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-end",marginBottom:22}}>
-                  <div>
-                    <h1 style={{fontFamily:"'Playfair Display',serif",fontSize:26,fontWeight:700,margin:"0 0 5px",letterSpacing:"-0.02em"}}>분석 히스토리</h1>
-                    <p style={{fontSize:13,color:"var(--text-secondary)",margin:0}}>{history.length}건의 분석 기록 저장됨</p>
-                  </div>
-                  {history.length>0&&(
-                    <button onClick={()=>{setHistory([]);try{localStorage.removeItem("prizm:history");}catch{}}} style={{background:"var(--bg-danger)",border:"1px solid var(--border-danger)",borderRadius:8,color:"var(--text-danger)",padding:"7px 16px",fontSize:12,cursor:"pointer"}}>전체 삭제</button>
-                  )}
-                </div>
-                {history.length===0?(
-                  <Card><p style={{color:"var(--text-tertiary)",textAlign:"center",padding:"32px 0",margin:0,fontSize:14}}>저장된 분석 기록이 없습니다. 영화를 분석하면 자동으로 저장됩니다.</p></Card>
-                ):(
-                  <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill, minmax(250px, 1fr))",gap:12}}>
-                    {history.map(e=>{
-                      const scC2=scoreColor(e.score), stC=STATUS_CFG[e.status], recC2=recColor(e.recommendation);
-                      return (
-                        <div key={e.id} className="hov-card" onClick={()=>{setResult(e.result);setForm(e.form||{});setTab("overview");setView("results");}}
-                          style={{background:"var(--bg-primary)",border:"0.5px solid var(--border-tertiary)",borderRadius:"var(--radius-lg)",padding:"16px 18px",cursor:"pointer",transition:"border-color .15s"}}>
-                          <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:10}}>
-                            <div style={{flex:1,minWidth:0,marginRight:10}}>
-                              <p style={{fontFamily:"'Playfair Display',serif",fontSize:15,fontWeight:700,margin:"0 0 2px",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{e.title}</p>
-                              {e.koreanTitle&&<p style={{fontSize:12,color:"var(--text-secondary)",margin:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{e.koreanTitle}</p>}
-                            </div>
-                            <div style={{fontFamily:"'Playfair Display',serif",fontSize:28,fontWeight:900,color:scC2,flexShrink:0}}>{e.score||"—"}</div>
-                          </div>
-                          <div style={{display:"flex",flexWrap:"wrap",gap:5,marginBottom:10}}>
-                            {stC&&<Badge c={stC.c} bg={stC.bg} border={stC.border}>{stC.label}</Badge>}
-                            {e.recommendation&&<Badge c={recC2} bg={recC2+"14"}>{e.recommendation}</Badge>}
-                          </div>
-                          <p style={{fontSize:11,color:"var(--text-tertiary)",margin:0}}>{new Date(e.date).toLocaleDateString("ko-KR",{year:"numeric",month:"long",day:"numeric"})}</p>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-            )}
-          </main>
+        <div style="margin-bottom:22px">
+          <label class="form-label">시놉시스 <span style="color:#9c9894;text-transform:none;font-weight:400;letter-spacing:0">(선택)</span></label>
+          <textarea class="form-input" id="f-syn" rows="3" placeholder="줄거리 또는 시놉시스를 입력하세요."></textarea>
         </div>
-      );
-    }
+        <div style="margin-bottom:22px">
+          <label class="form-label">배급사 라인업 파일 <span style="color:#9c9894;text-transform:none;font-weight:400;letter-spacing:0">(선택 — 엑셀/CSV)</span></label>
+          <div id="lu-zone" class="upload-zone" onclick="document.getElementById('lu-inp').click()" ondragover="event.preventDefault();this.style.borderColor='#c9292b'" ondragleave="this.style.borderColor=''" ondrop="onLuDrop(event)">
+            <p style="font-size:13px;color:#5c5955;margin:0">📁 클릭하거나 파일을 여기에 드래그</p>
+            <small style="font-size:11px;color:#9c9894;margin-top:4px;display:block">.xlsx · .xls · .csv 지원</small>
+          </div>
+          <div id="lu-ok" class="upload-ok" style="display:none">
+            <span style="font-size:20px">📋</span>
+            <div style="flex:1">
+              <p id="lu-name" style="font-size:13px;font-weight:500;color:#059669;margin:0"></p>
+              <p id="lu-cnt" style="font-size:11px;color:#9c9894;margin:2px 0 0"></p>
+            </div>
+            <button onclick="clearLu()" style="background:none;border:none;color:#9c9894;cursor:pointer;font-size:20px;padding:0 4px;line-height:1">×</button>
+          </div>
+          <input id="lu-inp" type="file" accept=".xlsx,.xls,.csv" style="display:none" onchange="onLuFile(this)"/>
+        </div>
+        <div style="display:flex;gap:10px">
+          <button class="btn-red" onclick="doAnalysis()">🔍  AI 분석 시작</button>
+          <button class="btn-gray" onclick="addToQ()">+ 큐</button>
+        </div>
+      </div>
+      <div id="q-card" class="card" style="display:none">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+          <div>
+            <div class="card-title" style="margin:0">배치 큐</div>
+            <p id="q-cnt" style="font-size:12px;color:#9c9894;margin-top:4px"></p>
+          </div>
+          <button onclick="runQ()" style="background:#c9292b;border:none;border-radius:8px;color:#fff;padding:8px 20px;font-size:13px;cursor:pointer;font-weight:500">모두 분석 →</button>
+        </div>
+        <div id="q-list"></div>
+      </div>
+    </div>
 
-    try {
-      ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
-    } catch(e) {
-      document.getElementById("root").innerHTML = '<div style="padding:40px;font-family:sans-serif;color:#c9292b"><h2>초기화 오류</h2><pre>'+e.message+'</pre></div>';
+    <!-- LOADING -->
+    <div id="v-load" style="display:none;text-align:center;padding:80px 0">
+      <div class="spinner"></div>
+      <p style="font-family:'Playfair Display',serif;font-size:24px;font-weight:700;margin-bottom:8px">분석 진행 중</p>
+      <p id="load-txt" style="color:#5c5955;font-size:14px;margin-bottom:32px"></p>
+      <div id="load-dots" style="display:flex;gap:6px;justify-content:center"></div>
+    </div>
+
+    <!-- RESULTS -->
+    <div id="v-res" style="display:none">
+      <div id="res-hdr" style="margin-bottom:20px"></div>
+      <div id="res-tabs" class="tabs no-print"></div>
+      <div id="res-body"></div>
+    </div>
+
+    <!-- HISTORY -->
+    <div id="v-hist" style="display:none">
+      <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:22px">
+        <div>
+          <h1 style="font-family:'Playfair Display',serif;font-size:26px;font-weight:700;letter-spacing:-.02em">분석 히스토리</h1>
+          <p id="h-cnt" style="font-size:13px;color:#5c5955;margin-top:4px"></p>
+        </div>
+        <button id="h-clr" onclick="clearHist()" style="background:#fff5f5;border:1px solid #fecaca;border-radius:8px;color:#b91c1c;padding:7px 16px;font-size:12px;cursor:pointer;display:none">전체 삭제</button>
+      </div>
+      <div id="h-grid" class="hist-grid"></div>
+    </div>
+  </main>
+</div>
+
+<div id="modal" class="modal-bg" style="display:none" onclick="if(event.target===this)closeModal()">
+  <div class="modal-box">
+    <h2 style="font-family:'Playfair Display',serif;font-size:20px;font-weight:700;margin-bottom:8px">설정</h2>
+    <p id="modal-info" style="font-size:13px;color:#5c5955;margin-bottom:24px"></p>
+    <button onclick="delKey()" style="width:100%;background:#fff5f5;border:1px solid #fecaca;border-radius:10px;color:#b91c1c;padding:12px;font-size:14px;cursor:pointer">API 키 삭제 및 로그아웃</button>
+    <button onclick="closeModal()" style="width:100%;background:transparent;border:1px solid #dedad5;border-radius:10px;color:#5c5955;padding:12px;font-size:14px;cursor:pointer;margin-top:8px">닫기</button>
+  </div>
+</div>
+
+<script>
+var G = {
+  apiKey:'', status:'', lineup:null, lineupName:'',
+  batch:[], history:[], result:null, tab:'overview',
+  loadStep:0, loadTimer:null
+};
+
+var LOADS = [
+  'Variety · The Hollywood Reporter 기사 검색 중…',
+  'IMDb · Rotten Tomatoes 정보 조회 중…',
+  '감독 필모그래피 KOBIS 누적관객수 조회 중…',
+  '배우 흥행 이력 KOBIS 데이터 수집 중…',
+  'Reddit · 해외 커뮤니티 반응 확인 중…',
+  '익스트림무비 · 무비코리아 검색 중…',
+  '유사작 KOBIS 한국 누적관객수 비교 중…',
+  'BoxOfficeMojo 북미 개봉 일정 조회 중…',
+  '경쟁작 분석 · 최적 배급 시기 수립 중…',
+  '마케팅 플랜 · 보도자료 초안 작성 중…'
+];
+
+var SC = {
+  'pre-production':{label:'Pre-Production',c:'#7c3aed',bg:'rgba(124,58,237,.08)',br:'rgba(124,58,237,.22)'},
+  'in-production': {label:'In Production', c:'#2563eb',bg:'rgba(37,99,235,.08)',  br:'rgba(37,99,235,.22)'},
+  'completed':     {label:'Completed',      c:'#059669',bg:'rgba(5,150,105,.08)', br:'rgba(5,150,105,.22)'},
+  'released':      {label:'Released',       c:'#c9292b',bg:'rgba(201,41,43,.08)', br:'rgba(201,41,43,.22)'}
+};
+var SENT = {
+  positive:{label:'긍정적',c:'#059669',bg:'rgba(5,150,105,.1)'},
+  mixed:{label:'혼조',c:'#d97706',bg:'rgba(217,119,6,.1)'},
+  negative:{label:'부정적',c:'#c9292b',bg:'rgba(201,41,43,.1)'},
+  unknown:{label:'미확인',c:'#6b7280',bg:'rgba(107,114,128,.1)'},
+  insufficient_data:{label:'정보부족',c:'#6b7280',bg:'rgba(107,114,128,.1)'}
+};
+var TABS=[
+  {id:'overview',lbl:'영화 개요'},{id:'buzz',lbl:'언론·커뮤니티'},
+  {id:'cast',lbl:'감독·배우'},{id:'market',lbl:'시장 분석'},
+  {id:'marketing',lbl:'마케팅 플랜'},{id:'press',lbl:'보도자료'},
+  {id:'verdict',lbl:'종합 평가'}
+];
+var SYS = '당신은 한국 외국 영화 수입배급사의 시니어 영화 분석가입니다. 웹 검색을 최대한 활용하여 입력된 영화의 한국 배급 가능성을 종합 분석합니다.\n\n【제작 상태별 검색 지침】\n- pre-production: 개발 공지 기사, 감독/배우 캐스팅 확정 뉴스 중심\n- in-production: 촬영 현장 기사, 첫 스틸 및 예고편 중심\n- completed: 영화제 상영 리뷰, 시사회 반응, 배급 계약 뉴스 중심\n- released: 최종 박스오피스 성적, 비평·관객 반응 중심\n\n【필수 검색 소스】\n1. IMDb, Rotten Tomatoes — 기본 정보 및 평점\n2. Variety, The Hollywood Reporter, Screen International, Deadline — 기사/리뷰\n3. Reddit: r/movies, r/criterion, r/filmfestivals 및 장르 서브레딧\n4. 익스트림무비(extrememovie.com), 무비코리아, 네이버 영화, 왓챠피디아\n5. KOBIS(kobis.or.kr) — 한국 개봉 영화 누적관객수\n6. BoxOfficeMojo(boxofficemojo.com/calendar/) — 북미 개봉 예정 일정\n\n【KOBIS 한국 흥행 조회 절차 — 반드시 준수】\n감독/배우 필모그래피 한국 흥행 및 유사작 비교 수치는 반드시:\n① 영문 원제로 KOBIS 검색 → 한국 개봉명 확인 → 누적관객수(발권통계) 기록\n② KOBIS에서 결과 없으면: 네이버에서 "영화 [영문원제]" 형식으로 검색 → 관객수 확인\n③ 두 방법 모두 실패 시: koreanAudience 필드에 "미개봉" 또는 "정보없음" 기재\n④ 반드시 한국개봉명(koreanTitle)과 누적관객수(koreanAudience)를 함께 기재\n   예: title="Knives Out", koreanTitle="나이브스 아웃", koreanAudience="1,247,832명"\n\n【BoxOfficeMojo 배급 시기 분석】\n① boxofficemojo.com/calendar/ 에서 해당 영화 북미 개봉일 확인\n② 전후 2~3개월 북미 주요 개봉작 조회\n③ 한국 메이저 직배사(CJ ENM, 월트디즈니, 유니버설, 워너, 소니 등)는 북미와 Day & Date 또는 1~2주 이내 한국 개봉이 관행\n④ 직배사 라인업과 겹치지 않는 최적 한국 개봉 시기 추천 + 경쟁 회피 근거 서술\n⑤ 사용자가 배급사 라인업 데이터를 업로드한 경우 해당 데이터를 최우선 반영\n\n【URL 규칙】 tradePressAndBuzz의 url 필드는 웹 검색으로 실제 확인된 URL만 기재. 못 찾으면 빈 문자열. URL 추측·생성 절대 금지.\n\n아래 JSON 형식으로만 응답. JSON 외 텍스트나 마크다운 코드블록 절대 포함 금지.\n\n{"filmOverview":{"title":"","koreanTitle":"","year":"","country":"","genre":"","runtime":"","status":"","releaseDate":"","imdbRating":"","rtScore":"","synopsis":"","awards":"","festivalHistory":""},"tradePressAndBuzz":{"tradeArticles":[{"source":"","title":"","url":"","date":"","summary":""}],"communityBuzz":[{"platform":"","title":"","url":"","sentiment":"positive|mixed|negative|unknown","note":""}],"festivalReviews":[{"source":"","title":"","url":"","sentiment":"positive|mixed|negative"}],"overallSentiment":"positive|mixed|negative|insufficient_data","buzzSummary":""},"directorAnalysis":{"name":"","nationality":"","careerSummary":"","majorWorks":[{"title":"원제","koreanTitle":"한국개봉명","year":"","globalBO":"","koreanAudience":"누적관객수 또는 미개봉"}],"koreanMarketSummary":"","acquisitionValue":""},"castAnalysis":[{"name":"","role":"","nationality":"","koreanRecognition":"높음|중간|낮음","majorWorks":[{"title":"원제","koreanTitle":"한국개봉명","year":"","koreanAudience":"누적관객수 또는 미개봉","note":""}],"marketingValue":""}],"marketAnalysis":{"opportunities":[{"factor":"","description":""}],"threats":[{"factor":"","description":""}],"comparableFilms":[{"title":"원제","koreanTitle":"한국개봉명","koreanAudience":"누적관객수","relevance":""}],"optimalReleaseWindow":""},"marketingPlan":{"primaryTarget":"","secondaryTarget":"","keywords":[],"taglines":[],"platformStrategy":"","keySellingPoints":[],"theatricalStrategy":{"releaseType":"","recommendedScreenCount":"","targetTheatreChains":"","releaseTimingSuggestion":"","competitionAnalysis":"","platformWindowStrategy":""}},"pressReleaseDraft":"","overallAssessment":{"acquisitionScore":7,"recommendation":"","expectedAudienceRange":"","keyRisks":"","finalOpinion":""}}';
+
+function e(s){if(!s)return'';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function bdg(txt,c,bg,br,sx){var bc=br||(c?c+'30':'#e8e5e0');return '<span class="bdg" style="background:'+(bg||'#f6f4f1')+';color:'+(c||'#5c5955')+';border-color:'+bc+';'+(sx||'")>'+e(txt)+'</span>';}
+function row(lbl,val){if(!val||['N/A','해당없음','미정',''].indexOf(String(val).trim())>-1)return'';return'<div class="row-wrap"><span class="row-label">'+e(lbl)+'</span><span class="row-val">'+e(val)+'</span></div>';}
+function rcol(r){if(!r)return'#6b7280';if(r.indexOf('추천')>-1)return'#059669';if(r.indexOf('검토')>-1||r.indexOf('조건')>-1)return'#d97706';return'#c9292b';}
+function scol(n){if(!n)return'#9c9894';if(n>=8)return'#e8a500';if(n>=6)return'#059669';if(n>=4)return'#d97706';return'#c9292b';}
+
+window.onload=function(){
+  try{G.history=JSON.parse(localStorage.getItem('prizm:history')||'[]');}catch(x){G.history=[];}
+  var k=localStorage.getItem('prizm:apikey')||'';
+  if(k){G.apiKey=k;showApp();}else{showAPI();}
+};
+
+function showAPI(){
+  document.getElementById('api-screen').style.display='flex';
+  document.getElementById('root').style.display='none';
+  var inp=document.getElementById('api-key-input');
+  var btn=document.getElementById('api-save-btn');
+  var sb=document.getElementById('api-show-btn');
+  inp.oninput=function(){
+    var ok=inp.value.startsWith('sk-');
+    btn.disabled=!ok;
+    btn.style.background=ok?'#c9292b':'#e0ddd9';
+    btn.style.cursor=ok?'pointer':'not-allowed';
+  };
+  sb.onclick=function(){inp.type=inp.type==='password'?'text':'password';sb.textContent=inp.type==='password'?'표시':'숨기기';};
+  btn.onclick=function(){if(!inp.value.startsWith('sk-'))return;G.apiKey=inp.value.trim();localStorage.setItem('prizm:apikey',G.apiKey);showApp();};
+  inp.onkeydown=function(ev){if(ev.key==='Enter')btn.click();};
+};
+
+function showApp(){
+  document.getElementById('api-screen').style.display='none';
+  document.getElementById('root').style.display='flex';
+  gotoForm();
+}
+function gotoForm(){
+  showV('form');
+  document.getElementById('nav-form').classList.add('active');
+  document.getElementById('nav-hist').classList.remove('active');
+  document.getElementById('export-bar').style.display='none';
+}
+function gotoHistory(){
+  showV('hist');
+  document.getElementById('nav-form').classList.remove('active');
+  document.getElementById('nav-hist').classList.add('active');
+  document.getElementById('export-bar').style.display='none';
+  renderHist();
+}
+function showV(id){
+  ['form','load','res','hist'].forEach(function(x){
+    var el=document.getElementById('v-'+x);
+    if(el)el.style.display='none';
+  });
+  var el=document.getElementById('v-'+id);
+  if(el){el.style.display='block';el.classList.remove('fu');void el.offsetWidth;el.classList.add('fu');}
+}
+
+function toggleStatus(btn){
+  var v=btn.dataset.v,cfg=SC[v];
+  if(G.status===v){
+    G.status='';
+    btn.style.background='transparent';btn.style.color='#5c5955';btn.style.borderColor='#e8e5e0';
+  }else{
+    G.status=v;
+    document.querySelectorAll('.pill').forEach(function(p){p.style.background='transparent';p.style.color='#5c5955';p.style.borderColor='#e8e5e0';});
+    btn.style.background=cfg.bg;btn.style.color=cfg.c;btn.style.borderColor=cfg.br;
+  }
+}
+
+function onLuDrop(ev){ev.preventDefault();document.getElementById('lu-zone').style.borderColor='';var f=ev.dataTransfer.files[0];if(f)parseLu(f);}
+function onLuFile(inp){var f=inp.files[0];if(f)parseLu(f);inp.value='';}
+function parseLu(file){
+  var rd=new FileReader();
+  rd.onload=function(ev){
+    try{
+      var data;
+      if(/\.csv$/i.test(file.name)){
+        var txt=ev.target.result;
+        var rows=txt.split('\n').filter(function(r){return r.trim();}).map(function(r){return r.split(',').map(function(c){return c.trim().replace(/^"|"$/g,'');});});
+        var hdrs=rows[0];
+        data=rows.slice(1).map(function(r){var o={};hdrs.forEach(function(h,i){o[h]=r[i]||'';});return o;});
+      }else{
+        if(typeof XLSX==='undefined'){showErr('엑셀 파서 로드 실패. CSV를 사용해 주세요.');return;}
+        var wb=XLSX.read(ev.target.result,{type:'array'});
+        var ws=wb.Sheets[wb.SheetNames[0]];
+        data=XLSX.utils.sheet_to_json(ws,{defval:''});
+      }
+      G.lineup=data;G.lineupName=file.name;
+      document.getElementById('lu-zone').style.display='none';
+      document.getElementById('lu-ok').style.display='flex';
+      document.getElementById('lu-name').textContent=file.name;
+      document.getElementById('lu-cnt').textContent=data.length+'행 데이터 로드됨 — 배급 시기 추천에 반영됩니다';
+    }catch(er){showErr('파일 파싱 실패: '+er.message);}
+  };
+  if(/\.csv$/i.test(file.name))rd.readAsText(file,'UTF-8');
+  else rd.readAsArrayBuffer(file);
+}
+function clearLu(){G.lineup=null;G.lineupName='';document.getElementById('lu-zone').style.display='block';document.getElementById('lu-ok').style.display='none';}
+function showErr(msg){var el=document.getElementById('form-err');el.textContent='⚠ '+msg;el.style.display='block';}
+function hideErr(){document.getElementById('form-err').style.display='none';}
+
+function getFD(){
+  return{
+    en:document.getElementById('f-en').value.trim(),
+    ko:document.getElementById('f-ko').value.trim(),
+    dir:document.getElementById('f-dir').value.trim(),
+    cast:document.getElementById('f-cast').value.trim(),
+    genre:document.getElementById('f-genre').value.trim(),
+    country:document.getElementById('f-country').value.trim(),
+    year:document.getElementById('f-year').value.trim(),
+    src:document.getElementById('f-src').value.trim(),
+    syn:document.getElementById('f-syn').value.trim(),
+    status:G.status
+  };
+}
+function buildMsg(fd){
+  var ls=['영문 제목: '+fd.en];
+  if(fd.ko)ls.push('한국어 제목: '+fd.ko);
+  ls.push('감독: '+fd.dir);
+  if(fd.cast)ls.push('주연배우: '+fd.cast);
+  if(fd.genre)ls.push('장르: '+fd.genre);
+  if(fd.country)ls.push('제작국가: '+fd.country);
+  if(fd.year)ls.push('제작연도: '+fd.year);
+  if(fd.status)ls.push('제작 상태: '+fd.status);
+  if(fd.src)ls.push('원작: '+fd.src);
+  if(fd.syn)ls.push('시놉시스 힌트: '+fd.syn);
+  if(G.lineup){
+    ls.push('\n【배급사 라인업 데이터 ('+G.lineupName+')】');
+    ls.push('사용자가 업로드한 배급사 상영 예정 라인업입니다. 배급 시기 추천 시 이 데이터를 최우선 반영하세요:');
+    ls.push(JSON.stringify(G.lineup,null,2).slice(0,3000));
+  }
+  ls.push('\nVariety, THR, KOBIS, BoxOfficeMojo, Reddit, 익스트림무비 등 모든 소스를 웹 검색하여 종합 분석 JSON을 작성해주세요.');
+  return ls.join('\n');
+}
+
+function doAnalysis(){
+  var fd=getFD();hideErr();
+  if(!fd.en||!fd.dir){showErr('영문 제목과 감독명은 필수 항목입니다.');return;}
+  runAnal(fd);
+}
+async function runAnal(fd){
+  hideErr();showV('load');startLoad();
+  try{
+    var res=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-api-key':G.apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:5000,system:SYS,tools:[{type:'web_search_20250305',name:'web_search'}],messages:[{role:'user',content:buildMsg(fd)}]})
+    });
+    var data=await res.json();
+    if(data.error)throw new Error(data.error.message);
+    var texts=(data.content||[]).filter(function(b){return b.type==='text';}).map(function(b){return b.text;});
+    var raw=texts[texts.length-1]||'';
+    var m=raw.match(/\{[\s\S]*\}/);
+    if(!m)throw new Error('결과 파싱 실패. 다시 시도해 주세요.');
+    var parsed=JSON.parse(m[0]);
+    G.result=parsed;G.tab='overview';
+    saveH(parsed,fd);
+    stopLoad();renderRes(parsed);showV('res');
+    document.getElementById('export-bar').style.display='flex';
+    document.getElementById('nav-form').classList.remove('active');
+  }catch(er){stopLoad();showV('form');showErr(er.message);}
+}
+
+function startLoad(){
+  G.loadStep=0;renderDots();
+  document.getElementById('load-txt').textContent=LOADS[0];
+  G.loadTimer=setInterval(function(){
+    G.loadStep=Math.min(G.loadStep+1,LOADS.length-1);
+    document.getElementById('load-txt').textContent=LOADS[G.loadStep];
+    renderDots();
+  },2800);
+}
+function stopLoad(){if(G.loadTimer){clearInterval(G.loadTimer);G.loadTimer=null;}}
+function renderDots(){
+  var h='';
+  for(var i=0;i<LOADS.length;i++){
+    h+='<div style="height:5px;border-radius:3px;width:'+(i===G.loadStep?'22px':'7px')+';background:'+(i===G.loadStep?'#c9292b':'#e8e5e0')+';transition:all .3s"></div>';
+  }
+  document.getElementById('load-dots').innerHTML=h;
+}
+
+function addToQ(){var fd=getFD();if(!fd.en)return;G.batch.push(fd);renderQ();}
+function removeQ(i){G.batch.splice(i,1);renderQ();}
+function renderQ(){
+  var card=document.getElementById('q-card');
+  if(!G.batch.length){card.style.display='none';return;}
+  card.style.display='block';
+  document.getElementById('q-cnt').textContent=G.batch.length+'편 대기 중';
+  var h='';
+  G.batch.forEach(function(q,i){
+    h+='<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 12px;background:#f6f4f1;border-radius:8px;margin-bottom:6px">';
+    h+='<div style="display:flex;gap:10px;align-items:center"><span style="font-size:12px;color:#9c9894;font-family:\'DM Mono\',monospace">'+String(i+1).padStart(2,'0')+'</span>';
+    h+='<div><span style="font-size:13px;font-weight:500">'+e(q.en)+'</span>';
+    if(q.dir)h+='<span style="font-size:12px;color:#9c9894;margin-left:8px">· '+e(q.dir)+'</span>';
+    h+='</div></div>';
+    h+='<button onclick="removeQ('+i+')" style="background:none;border:none;color:#9c9894;cursor:pointer;font-size:18px;padding:0 6px;line-height:1">×</button></div>';
+  });
+  document.getElementById('q-list').innerHTML=h;
+}
+async function runQ(){var q=G.batch.slice();G.batch=[];renderQ();for(var i=0;i<q.length;i++)await runAnal(q[i]);}
+
+function saveH(r,fd){
+  var en={id:Date.now(),date:new Date().toISOString(),title:(r.filmOverview||{}).title||fd.en,koreanTitle:(r.filmOverview||{}).koreanTitle||fd.ko,status:(r.filmOverview||{}).status||fd.status,score:(r.overallAssessment||{}).acquisitionScore,recommendation:(r.overallAssessment||{}).recommendation,result:r,form:fd};
+  G.history=[en].concat(G.history).slice(0,60);
+  try{localStorage.setItem('prizm:history',JSON.stringify(G.history));}catch(x){}
+  var nb=document.getElementById('nav-hist');
+  if(nb)nb.textContent='히스토리 '+G.history.length;
+}
+function clearHist(){G.history=[];try{localStorage.removeItem('prizm:history');}catch(x){}renderHist();}
+function loadH(i){var en=G.history[i];if(!en)return;G.result=en.result;G.tab='overview';renderRes(en.result);showV('res');document.getElementById('export-bar').style.display='flex';}
+function renderHist(){
+  var h=G.history;
+  document.getElementById('h-cnt').textContent=h.length+'건의 분석 기록 저장됨';
+  document.getElementById('h-clr').style.display=h.length?'block':'none';
+  var nb=document.getElementById('nav-hist');
+  if(nb)nb.textContent=h.length?'히스토리 '+h.length:'히스토리';
+  if(!h.length){document.getElementById('h-grid').innerHTML='<div class="card"><p style="color:#9c9894;text-align:center;padding:32px 0;font-size:14px">저장된 분석 기록이 없습니다.</p></div>';return;}
+  var html='';
+  h.forEach(function(en,i){
+    var stC=SC[en.status];var rc2=rcol(en.recommendation);
+    html+='<div class="hist-card" onclick="loadH('+i+')">';
+    html+='<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">';
+    html+='<div style="flex:1;min-width:0;margin-right:10px"><p style="font-family:\'Playfair Display\',serif;font-size:15px;font-weight:700;margin-bottom:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+e(en.title)+'</p>';
+    if(en.koreanTitle)html+='<p style="font-size:12px;color:#5c5955;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+e(en.koreanTitle)+'</p>';
+    html+='</div><div style="font-family:\'Playfair Display\',serif;font-size:28px;font-weight:900;color:'+scol(en.score)+';flex-shrink:0">'+(en.score||'—')+'</div></div>';
+    html+='<div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px">';
+    if(stC)html+=bdg(stC.label,stC.c,stC.bg,stC.br);
+    if(en.recommendation)html+=bdg(en.recommendation,rc2,rc2+'14','transparent');
+    html+='</div>';
+    html+='<p style="font-size:11px;color:#9c9894">'+new Date(en.date).toLocaleDateString('ko-KR',{year:'numeric',month:'long',day:'numeric'})+'</p>';
+    html+='</div>';
+  });
+  document.getElementById('h-grid').innerHTML=html;
+}
+
+function openSettings(){
+  var k=G.apiKey;
+  document.getElementById('modal-info').textContent='현재 API 키: '+k.slice(0,12)+'…'+k.slice(-4);
+  document.getElementById('modal').style.display='flex';
+}
+function closeModal(){document.getElementById('modal').style.display='none';}
+function delKey(){localStorage.removeItem('prizm:apikey');G.apiKey='';closeModal();showAPI();}
+
+function renderRes(R){
+  var ov=R.filmOverview||{},oa=R.overallAssessment||{};
+  var stCfg=SC[ov.status];var rc=rcol(oa.recommendation);
+  var bdgs='';
+  if(stCfg)bdgs+=bdg(stCfg.label,stCfg.c,stCfg.bg,stCfg.br)+' ';
+  if(ov.imdbRating&&ov.imdbRating!=='N/A')bdgs+=bdg('⭐ IMDb '+ov.imdbRating,'#d97706','rgba(217,119,6,.1)','transparent')+' ';
+  if(ov.rtScore&&ov.rtScore!=='N/A')bdgs+=bdg('🍅 RT '+ov.rtScore,'#e55a00','rgba(229,90,0,.1)','transparent')+' ';
+  if(oa.recommendation)bdgs+=bdg(oa.recommendation,rc,rc+'18',rc+'40','font-weight:600')+' ';
+  var yr=ov.year?'<span style="color:#9c9894;font-size:17px;font-weight:400;margin-left:10px">('+e(ov.year)+')</span>':'';
+  document.getElementById('res-hdr').innerHTML='<div style="margin-bottom:9px">'+bdgs+'</div><h1 style="font-family:\'Playfair Display\',serif;font-size:26px;font-weight:700;letter-spacing:-.02em;line-height:1.2;margin-bottom:4px">'+e(ov.title)+yr+'</h1>'+(ov.koreanTitle?'<p style="color:#5c5955;font-size:15px">'+e(ov.koreanTitle)+'</p>':'');
+  var th='';
+  TABS.forEach(function(t){th+='<button class="tab'+(G.tab===t.id?' active':'')+'" data-tid="'+t.id+'" onclick="swTab(this)">'+t.lbl+'</button>';});
+  th+='<div style="flex:1"></div><button class="tab" onclick="gotoForm()" style="color:#9c9894">+ 새 분석</button>';
+  document.getElementById('res-tabs').innerHTML=th;
+  var eb='';
+  eb+='<button class="hbtn" onclick="doShare()">공유</button>';
+  eb+='<button class="hbtn" onclick="dlCSV()">CSV</button>';
+  eb+='<button class="hbtn" onclick="dlTXT()">텍스트</button>';
+  eb+='<button class="hbtn" onclick="window.print()">인쇄/PDF</button>';
+  document.getElementById('export-bar').innerHTML=eb;
+  renderTab(G.tab,R);
+}
+function swTab(btn){
+  G.tab=btn.dataset.tid;
+  document.querySelectorAll('.tab').forEach(function(t){t.classList.remove('active');});
+  btn.classList.add('active');
+  renderTab(G.tab,G.result);
+}
+
+function lnkRow(title,src,date,url,sentKey,note){
+  var s=SENT[sentKey]||{label:'미확인',c:'#6b7280',bg:'rgba(107,114,128,.1)'};
+  var live=url&&url.length>10&&url.startsWith('http');
+  var h='<div class="link-row">';
+  h+='<div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:4px">';
+  if(src)h+='<span style="font-size:11px;font-weight:600;color:#5c5955;text-transform:uppercase;letter-spacing:.05em">'+e(src)+'</span>';
+  if(date)h+='<span style="font-size:11px;color:#9c9894">'+e(date)+'</span>';
+  if(sentKey)h+=bdg(s.label,s.c,s.bg,'transparent');
+  h+='</div>';
+  if(live)h+='<a href="'+e(url)+'" target="_blank" rel="noopener" style="color:#1d4ed8;font-size:13px;font-weight:500;line-height:1.5;display:block">'+e(title)+' ↗</a>';
+  else if(title)h+='<span style="font-size:13px;font-weight:500;line-height:1.5;display:block">'+e(title)+'</span>';
+  if(note)h+='<p style="color:#5c5955;font-size:12px;margin-top:4px;line-height:1.5">'+e(note)+'</p>';
+  h+='</div>';return h;
+}
+
+function renderTab(tab,R){
+  var ov=R.filmOverview||{},oa=R.overallAssessment||{};
+  var mp=R.marketingPlan||{},ts=mp.theatricalStrategy||{};
+  var ma=R.marketAnalysis||{},bz=R.tradePressAndBuzz||{};
+  var dir=R.directorAnalysis||{};
+  var stCfg=SC[ov.status];
+  var h='';
+
+  if(tab==='overview'){
+    h+='<div class="card"><div class="card-title">영화 기본 정보</div>';
+    if(stCfg){h+='<div style="display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding:10px 14px;background:'+stCfg.bg+';border-radius:9px;border:1px solid '+stCfg.br+';margin-bottom:16px"><span style="font-size:13px;font-weight:600;color:'+stCfg.c+'">'+stCfg.label+'</span>'+(ov.releaseDate&&ov.releaseDate!=='미정'?'<span style="font-size:12px;color:'+stCfg.c+';opacity:.75">— 개봉 예정: '+e(ov.releaseDate)+'</span>':'')+'</div>';}
+    h+=row('시놉시스',ov.synopsis)+row('감독',dir.name)+row('장르',ov.genre)+row('제작국가',ov.country)+row('상영시간',ov.runtime);
+    if(ov.imdbRating&&ov.imdbRating!=='N/A')h+=row('IMDb 평점',ov.imdbRating);
+    if(ov.rtScore&&ov.rtScore!=='N/A')h+=row('로튼토마토',ov.rtScore);
+    if(ov.festivalHistory&&ov.festivalHistory!=='해당없음')h+=row('영화제 이력',ov.festivalHistory);
+    if(ov.awards&&ov.awards!=='해당없음')h+=row('수상 이력',ov.awards);
+    h+='</div>';
+  }
+  else if(tab==='buzz'){
+    var sc2=SENT[bz.overallSentiment]||SENT.unknown;
+    h+='<div class="card"><div style="display:flex;flex-wrap:wrap;gap:20px;align-items:flex-start"><div><p style="font-size:11px;color:#9c9894;text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px">전반적 반응</p>'+bdg(sc2.label,sc2.c,sc2.bg,'transparent','font-size:14px;padding:5px 16px')+'</div>';
+    if(bz.buzzSummary)h+='<p style="font-size:14px;color:#5c5955;line-height:1.7;flex:1;max-width:580px;padding-top:2px">'+e(bz.buzzSummary)+'</p>';
+    h+='</div></div>';
+    if(bz.tradeArticles&&bz.tradeArticles.length){h+='<div class="card"><div class="card-title">해외 영화 전문지 <span style="font-size:12px;font-weight:400;color:#9c9894">Variety · THR · Screen International 등</span></div>';bz.tradeArticles.forEach(function(a){h+=lnkRow(a.title,a.source,a.date,a.url,null,a.summary);});h+='</div>';}
+    if(bz.festivalReviews&&bz.festivalReviews.length){h+='<div class="card"><div class="card-title">영화제 시사 리뷰</div>';bz.festivalReviews.forEach(function(a){h+=lnkRow(a.title,a.source,'',a.url,a.sentiment,'');});h+='</div>';}
+    if(bz.communityBuzz&&bz.communityBuzz.length){h+='<div class="card"><div class="card-title">커뮤니티 반응 <span style="font-size:12px;font-weight:400;color:#9c9894">Reddit · 익스트림무비 · 무비코리아 등</span></div>';bz.communityBuzz.forEach(function(b){h+=lnkRow(b.title,b.platform,'',b.url,b.sentiment,b.note);});h+='</div>';}
+  }
+  else if(tab==='cast'){
+    if(dir.name){
+      h+='<div class="card"><div class="card-title">감독</div>';
+      h+='<div style="display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-bottom:14px"><span style="font-family:\'Playfair Display\',serif;font-size:20px;font-weight:700">'+e(dir.name)+'</span>'+(dir.nationality?bdg(dir.nationality,null,null,null):'')+' </div>';
+      if(dir.careerSummary)h+='<p style="font-size:14px;color:#5c5955;line-height:1.72;margin-bottom:18px">'+e(dir.careerSummary)+'</p>';
+      if(dir.majorWorks&&dir.majorWorks.length){
+        h+='<div style="margin-bottom:18px;overflow-x:auto"><p style="font-size:11px;color:#9c9894;text-transform:uppercase;letter-spacing:.07em;margin-bottom:10px">주요 작품 박스오피스</p><table><thead><tr><th>원제</th><th>한국개봉명</th><th>연도</th><th>글로벌 흥행</th><th>한국 누적관객</th></tr></thead><tbody>';
+        dir.majorWorks.forEach(function(w){
+          var ac=(w.koreanAudience&&w.koreanAudience!=='미개봉'&&w.koreanAudience!=='정보없음')?' style="color:#d97706;font-family:\'DM Mono\',monospace;font-size:12px"':'style="color:#9c9894"';
+          h+='<tr><td style="font-weight:500">'+e(w.title)+'</td><td>'+e(w.koreanTitle||'—')+'</td><td style="color:#9c9894;font-family:\'DM Mono\',monospace;font-size:12px">'+e(w.year)+'</td><td style="color:#5c5955">'+e(w.globalBO||'—')+'</td><td '+ac+'>'+e(w.koreanAudience||w.koreanBO||'—')+'</td></tr>';
+        });
+        h+='</tbody></table></div>';
+      }
+      h+=row('한국 시장',dir.koreanMarketSummary);
+      if(dir.acquisitionValue)h+='<div class="note-box"><div class="note-lbl">구매 메리트</div><div style="font-size:14px;line-height:1.65">'+e(dir.acquisitionValue)+'</div></div>';
+      h+='</div>';
     }
-  </script>
+    var rcMap={높음:{c:'#059669',bg:'rgba(5,150,105,.1)'},중간:{c:'#d97706',bg:'rgba(217,119,6,.1)'},낮음:{c:'#6b7280',bg:'rgba(107,114,128,.1)'}};
+    (R.castAnalysis||[]).forEach(function(actor){
+      var rc2=rcMap[actor.koreanRecognition]||rcMap['낮음'];
+      h+='<div class="card"><div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-bottom:12px"><span style="font-family:\'Playfair Display\',serif;font-size:18px;font-weight:700">'+e(actor.name)+'</span>';
+      if(actor.nationality)h+=bdg(actor.nationality,null,null,null);
+      if(actor.role)h+='<span style="font-size:13px;color:#9c9894">役 '+e(actor.role)+'</span>';
+      if(actor.koreanRecognition)h+=bdg('한국 인지도 '+actor.koreanRecognition,rc2.c,rc2.bg,'transparent');
+      h+='</div>';
+      (actor.majorWorks||[]).forEach(function(w){
+        var hasA=w.koreanAudience&&w.koreanAudience!=='미개봉'&&w.koreanAudience!=='정보없음';
+        h+='<div style="font-size:13px;color:#5c5955;margin-bottom:6px"><span style="color:#1a1917;font-weight:500">'+e(w.title)+'</span>';
+        if(w.koreanTitle&&w.koreanTitle!=='미개봉')h+='<span style="color:#5c5955"> / '+e(w.koreanTitle)+'</span>';
+        h+='<span style="color:#9c9894"> ('+e(w.year)+')</span>';
+        if(hasA)h+='<span style="color:#d97706;font-family:\'DM Mono\',monospace;font-size:11px;margin-left:6px">🇰🇷 '+e(w.koreanAudience)+'</span>';
+        if(w.note)h+='<span style="color:#9c9894"> — '+e(w.note)+'</span>';
+        h+='</div>';
+      });
+      if(actor.marketingValue)h+='<p style="font-size:13px;color:#5c5955;margin-top:10px;line-height:1.65;border-top:.5px solid #e8e5e0;padding-top:10px">'+e(actor.marketingValue)+'</p>';
+      h+='</div>';
+    });
+  }
+  else if(tab==='market'){
+    h+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">';
+    h+='<div class="card" style="margin-bottom:0"><div class="card-title" style="color:#059669">기회 요인</div>';
+    (ma.opportunities||[]).forEach(function(o){h+='<div style="border-left:3px solid rgba(5,150,105,.35);padding-left:14px;margin-bottom:16px"><p style="font-size:14px;font-weight:500;color:#059669;margin-bottom:4px">'+e(o.factor)+'</p><p style="font-size:13px;color:#5c5955;line-height:1.65">'+e(o.description)+'</p></div>';});
+    h+='</div><div class="card" style="margin-bottom:0"><div class="card-title" style="color:#c9292b">위협 요인</div>';
+    (ma.threats||[]).forEach(function(t){h+='<div style="border-left:3px solid rgba(201,41,43,.35);padding-left:14px;margin-bottom:16px"><p style="font-size:14px;font-weight:500;color:#c9292b;margin-bottom:4px">'+e(t.factor)+'</p><p style="font-size:13px;color:#5c5955;line-height:1.65">'+e(t.description)+'</p></div>';});
+    h+='</div></div>';
+    if(ma.comparableFilms&&ma.comparableFilms.length){
+      h+='<div class="card"><div class="card-title">유사 작품 한국 흥행 비교 <span style="font-size:11px;font-weight:400;color:#9c9894">KOBIS 누적관객수 기준</span></div><div style="overflow-x:auto"><table><thead><tr><th>원제</th><th>한국개봉명</th><th>누적관객수</th><th>비교 근거</th></tr></thead><tbody>';
+      ma.comparableFilms.forEach(function(f){h+='<tr><td style="color:#5c5955;font-size:12px">'+e(f.title)+'</td><td style="font-weight:500">'+e(f.koreanTitle||f.title)+'</td><td style="color:#d97706;font-family:\'DM Mono\',monospace;font-size:12px">'+e(f.koreanAudience||f.koreanBO||'—')+'</td><td style="color:#5c5955">'+e(f.relevance)+'</td></tr>';});
+      h+='</tbody></table></div>';
+      if(ma.optimalReleaseWindow)h+='<div class="note-box" style="margin-top:16px"><div class="note-lbl">추천 개봉 시즌</div><div style="font-size:14px">'+e(ma.optimalReleaseWindow)+'</div></div>';
+      h+='</div>';
+    }
+  }
+  else if(tab==='marketing'){
+    h+='<div class="card"><div class="card-title">타겟 & 키워드</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px"><div><p style="font-size:11px;color:#9c9894;text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px">핵심 타겟</p><p style="font-size:14px;line-height:1.65">'+e(mp.primaryTarget||'')+'</p></div><div><p style="font-size:11px;color:#9c9894;text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px">부차 타겟</p><p style="font-size:14px;color:#5c5955;line-height:1.65">'+e(mp.secondaryTarget||'')+'</p></div></div>';
+    if(mp.keywords&&mp.keywords.length){h+='<p style="font-size:11px;color:#9c9894;text-transform:uppercase;letter-spacing:.07em;margin-bottom:10px">마케팅 키워드</p>';mp.keywords.forEach(function(k){h+='<span class="kw">#'+e(k)+'</span>';});}
+    h+='</div>';
+    if(mp.taglines&&mp.taglines.length){h+='<div class="card"><div class="card-title">카피라인 제안</div>';mp.taglines.forEach(function(t){h+='<div class="tagline">"'+e(t)+'"</div>';});h+='</div>';}
+    if(ts.releaseType){
+      h+='<div class="card"><div class="card-title" style="color:#c9292b">극장 배급 전략</div>';
+      h+='<div style="background:#f6f4f1;border-radius:10px;padding:16px 18px;margin-bottom:16px"><p style="font-size:11px;color:#9c9894;text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px">개봉 유형</p><p style="font-size:16px;font-weight:500;color:#c9292b;line-height:1.4">'+e(ts.releaseType)+'</p></div>';
+      h+=row('추천 개봉 시기',ts.releaseTimingSuggestion)+row('추천 상영관 수',ts.recommendedScreenCount)+row('극장 체인 전략',ts.targetTheatreChains)+row('경쟁작 분석',ts.competitionAnalysis)+row('OTT 전환 전략',ts.platformWindowStrategy);
+      h+='</div>';
+    }
+    if(mp.keySellingPoints&&mp.keySellingPoints.length){h+='<div class="card"><div class="card-title">핵심 셀링 포인트</div>';mp.keySellingPoints.forEach(function(sp){h+='<div style="display:flex;gap:12px;margin-bottom:12px;align-items:flex-start"><span style="color:#c9292b;font-size:13px;flex-shrink:0;margin-top:3px">◆</span><p style="font-size:14px;margin:0;line-height:1.65">'+e(sp)+'</p></div>';});h+='</div>';}
+    if(mp.platformStrategy)h+='<div class="card"><div class="card-title">디지털 · SNS · OTT 플랫폼 전략</div><p style="font-size:14px;color:#5c5955;line-height:1.75">'+e(mp.platformStrategy)+'</p></div>';
+  }
+  else if(tab==='press'){
+    h+='<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px"><div class="card-title" style="margin:0">보도자료 초안</div><button id="cp-btn" onclick="cpPress()" style="background:#f6f4f1;border:.5px solid #dedad5;border-radius:8px;color:#5c5955;padding:7px 18px;font-size:13px;cursor:pointer">복사</button></div>';
+    h+='<div class="press-body" id="press-txt">'+e(R.pressReleaseDraft||'')+'</div>';
+    h+='<p style="font-size:12px;color:#9c9894;margin-top:10px;text-align:right">* AI 생성 초안 — 개봉 확정 후 날짜·배급사명 등 수정하여 사용하세요.</p></div>';
+  }
+  else if(tab==='verdict'){
+    var sc3=oa.acquisitionScore;var rc3=rcol(oa.recommendation);
+    h+='<div class="card"><div style="display:flex;gap:24px;align-items:flex-start;flex-wrap:wrap;margin-bottom:24px"><div style="text-align:center;min-width:100px"><div style="font-family:\'Playfair Display\',serif;font-size:72px;font-weight:900;color:'+scol(sc3)+';line-height:1">'+(sc3||'—')+'</div><div style="font-size:12px;color:#9c9894;margin-top:4px">/10점</div></div><div style="flex:1">';
+    if(oa.recommendation)h+='<div style="display:inline-block;background:'+rc3+'18;color:'+rc3+';border:1px solid '+rc3+'40;border-radius:9px;padding:8px 20px;font-size:15px;font-weight:600;margin-bottom:14px">'+e(oa.recommendation)+'</div>';
+    h+=row('예상 관객 수',oa.expectedAudienceRange);
+    h+='</div></div>';
+    if(oa.keyRisks)h+='<div class="risk-box"><div style="font-size:12px;color:#b91c1c;font-weight:600;margin-bottom:5px">핵심 리스크</div><p style="font-size:14px;line-height:1.65">'+e(oa.keyRisks)+'</p></div>';
+    if(oa.finalOpinion)h+='<p style="font-size:11px;color:#9c9894;text-transform:uppercase;letter-spacing:.07em;margin-bottom:10px">종합 의견</p><p style="font-size:14px;line-height:1.85">'+e(oa.finalOpinion)+'</p>';
+    h+='</div>';
+  }
+  document.getElementById('res-body').innerHTML=h;
+}
+
+function cpPress(){
+  var el=document.getElementById('press-txt');
+  var btn=document.getElementById('cp-btn');
+  if(!el||!btn)return;
+  navigator.clipboard.writeText(el.textContent).then(function(){
+    btn.textContent='✓ 복사됨';btn.style.color='#15803d';
+    setTimeout(function(){btn.textContent='복사';btn.style.color='';},2200);
+  });
+}
+
+function doShare(){
+  var R=G.result||{};var ov=R.filmOverview||{};var oa=R.overallAssessment||{};
+  var txt='[PRIZM 분석] '+(ov.title||'')+' ('+(ov.koreanTitle||'')+') — 구매 점수 '+(oa.acquisitionScore||'?')+'/10 · '+(oa.recommendation||'');
+  if(navigator.share)navigator.share({title:'PRIZM 영화 분석',text:txt});
+  else{navigator.clipboard.writeText(txt);alert('클립보드에 복사됐습니다.');}
+}
+
+function dlCSV(){
+  var R=G.result||{};var ov=R.filmOverview||{};var oa=R.overallAssessment||{};var mp=R.marketingPlan||{};var ts=mp.theatricalStrategy||{};var bz=R.tradePressAndBuzz||{};
+  var rows=[['항목','내용'],['영화 제목 (영문)',ov.title||''],['영화 제목 (한국어)',ov.koreanTitle||''],['제작 상태',ov.status||''],['제작연도',ov.year||''],['제작국가',ov.country||''],['장르',ov.genre||''],['시놉시스',ov.synopsis||''],['',''],['구매 점수',oa.acquisitionScore||''],['구매 추천 여부',oa.recommendation||''],['예상 관객 수',oa.expectedAudienceRange||''],['핵심 리스크',oa.keyRisks||''],['종합 의견',oa.finalOpinion||''],['',''],['핵심 타겟',mp.primaryTarget||''],['키워드',(mp.keywords||[]).join(', ')],['카피라인',(mp.taglines||[]).join(' / ')],['',''],['극장 배급 유형',ts.releaseType||''],['추천 개봉 시기',ts.releaseTimingSuggestion||''],['경쟁작 분석',ts.competitionAnalysis||''],['',''],['버즈 반응',bz.overallSentiment||''],['버즈 요약',bz.buzzSummary||''],['',''],['보도자료 초안',R.pressReleaseDraft||'']];
+  var csv=rows.map(function(r){return r.map(function(c){return'"'+String(c).replace(/"/g,'""')+'"';}).join(',');}).join('\r\n');
+  var blob=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8;'});
+  var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='PRIZM_'+((ov.title||'film').replace(/\s+/g,'_'))+'_'+new Date().toISOString().slice(0,10)+'.csv';a.click();
+}
+
+function dlTXT(){
+  var R=G.result||{};var ov=R.filmOverview||{};var oa=R.overallAssessment||{};var mp=R.marketingPlan||{};var ts=mp.theatricalStrategy||{};
+  var hr='─'.repeat(56);
+  var ls=[
+    'PRIZM — Film Acquisition Intelligence',hr,'분석 리포트: '+(ov.title||''),'생성일: '+new Date().toLocaleDateString('ko-KR'),hr,'',
+    '■ 영화 기본 정보','  제목 (영문): '+(ov.title||''),'  제목 (한국어): '+(ov.koreanTitle||''),'  제작 상태: '+(ov.status||''),'  제작연도 / 국가: '+(ov.year||'')+' / '+(ov.country||''),'  시놉시스: '+(ov.synopsis||''),
+    '','■ 종합 평가','  점수: '+(oa.acquisitionScore||'')+'/10','  추천: '+(oa.recommendation||''),'  예상 관객: '+(oa.expectedAudienceRange||''),'  리스크: '+(oa.keyRisks||''),'  의견: '+(oa.finalOpinion||''),
+    '','■ 마케팅 플랜','  타겟: '+(mp.primaryTarget||''),'  키워드: '+(mp.keywords||[]).join(', '),
+    '','■ 극장 배급 전략','  유형: '+(ts.releaseType||''),'  개봉 시기: '+(ts.releaseTimingSuggestion||''),'  경쟁작: '+(ts.competitionAnalysis||''),
+    '',hr,'■ 보도자료 초안',hr,R.pressReleaseDraft||''
+  ];
+  var blob=new Blob([ls.join('\n')],{type:'text/plain;charset=utf-8;'});
+  var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='PRIZM_'+((ov.title||'film').replace(/\s+/g,'_'))+'_'+new Date().toISOString().slice(0,10)+'.txt';a.click();
+}
+</script>
 </body>
 </html>
