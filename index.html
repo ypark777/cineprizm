@@ -1,0 +1,1076 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PRIZM — Film Acquisition Intelligence</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=DM+Sans:wght@300;400;500&family=DM+Mono&display=swap" rel="stylesheet" />
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <style>
+    :root {
+      --bg-primary:   #ffffff;
+      --bg-secondary: #f6f4f1;
+      --bg-tertiary:  #eeece8;
+      --bg-danger:    #fff5f5;
+      --bg-success:   #f0fdf4;
+      --text-primary:   #1a1917;
+      --text-secondary: #5c5955;
+      --text-tertiary:  #9c9894;
+      --text-danger:    #b91c1c;
+      --text-success:   #15803d;
+      --text-info:      #1d4ed8;
+      --border-primary:   #d0cdc8;
+      --border-secondary: #dedad5;
+      --border-tertiary:  #e8e5e0;
+      --border-danger:    #fecaca;
+      --border-success:   #bbf7d0;
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-lg: 14px;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 16px; }
+    body {
+      font-family: 'DM Sans', system-ui, -apple-system, sans-serif;
+      background: var(--bg-tertiary);
+      color: var(--text-primary);
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+    }
+    input, select, textarea, button {
+      font-family: 'DM Sans', system-ui, sans-serif;
+    }
+    input:focus, select:focus, textarea:focus {
+      outline: none;
+      border-color: rgba(201,41,43,0.5) !important;
+      box-shadow: 0 0 0 3px rgba(201,41,43,0.08) !important;
+    }
+    input::placeholder, textarea::placeholder { color: var(--text-tertiary); }
+    a { text-decoration: none; color: var(--text-info); }
+    a:hover { opacity: 0.78; }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border-primary); border-radius: 3px; }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @keyframes fadeUp { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:translateY(0); } }
+    @keyframes pulse { 0%,100%{opacity:.25} 50%{opacity:1} }
+    .fade-up { animation: fadeUp 0.35s ease; }
+    .hov-card:hover { border-color: var(--border-primary) !important; }
+    @media print { .no-print { display:none !important; } }
+    @media (max-width: 600px) {
+      .grid-2 { grid-template-columns: 1fr !important; }
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect, useRef, useCallback } = React;
+
+    /* ═══════════════════════════════════════════════════
+       CONSTANTS
+    ═══════════════════════════════════════════════════ */
+    const STATUS_CFG = {
+      "pre-production": { label:"Pre-Production", c:"#7c3aed", bg:"rgba(124,58,237,0.08)", border:"rgba(124,58,237,0.22)" },
+      "in-production":  { label:"In Production",  c:"#2563eb", bg:"rgba(37,99,235,0.08)",   border:"rgba(37,99,235,0.22)" },
+      "completed":      { label:"Completed",       c:"#059669", bg:"rgba(5,150,105,0.08)",   border:"rgba(5,150,105,0.22)" },
+      "released":       { label:"Released",        c:"#c9292b", bg:"rgba(201,41,43,0.08)",   border:"rgba(201,41,43,0.22)" },
+    };
+
+    const SENT_CFG = {
+      positive:          { label:"긍정적", c:"#059669", bg:"rgba(5,150,105,0.1)" },
+      mixed:             { label:"혼조",   c:"#d97706", bg:"rgba(217,119,6,0.1)" },
+      negative:          { label:"부정적", c:"#c9292b", bg:"rgba(201,41,43,0.1)" },
+      unknown:           { label:"미확인", c:"#6b7280", bg:"rgba(107,114,128,0.1)" },
+      insufficient_data: { label:"정보부족",c:"#6b7280", bg:"rgba(107,114,128,0.1)" },
+    };
+
+    const TABS = [
+      { id:"overview",  label:"영화 개요" },
+      { id:"buzz",      label:"언론·커뮤니티" },
+      { id:"cast",      label:"감독·배우" },
+      { id:"market",    label:"시장 분석" },
+      { id:"marketing", label:"마케팅 플랜" },
+      { id:"press",     label:"보도자료" },
+      { id:"verdict",   label:"종합 평가" },
+    ];
+
+    const LOAD_MSGS = [
+      "Variety · The Hollywood Reporter 기사 검색 중…",
+      "IMDb · Rotten Tomatoes 정보 조회 중…",
+      "감독 필모그래피 박스오피스 분석 중…",
+      "배우 흥행 이력 데이터 수집 중…",
+      "Reddit · 해외 커뮤니티 반응 확인 중…",
+      "익스트림무비 · 무비코리아 검색 중…",
+      "한국 유사 작품 흥행 비교 중…",
+      "영화제 시사 리뷰 수집 중…",
+      "극장 배급 전략 수립 중…",
+      "마케팅 플랜 · 보도자료 초안 작성 중…",
+    ];
+
+    const recColor = r => {
+      if (!r) return "#6b7280";
+      if (r.includes("추천")) return "#059669";
+      if (r.includes("검토") || r.includes("조건")) return "#d97706";
+      return "#c9292b";
+    };
+    const scoreColor = n => {
+      if (!n) return "var(--text-tertiary)";
+      if (n >= 8) return "#e8a500";
+      if (n >= 6) return "#059669";
+      if (n >= 4) return "#d97706";
+      return "#c9292b";
+    };
+
+    /* ═══════════════════════════════════════════════════
+       SYSTEM PROMPT
+    ═══════════════════════════════════════════════════ */
+    const SYSTEM_PROMPT = `당신은 한국 외국 영화 수입배급사의 시니어 영화 분석가입니다. 웹 검색을 최대한 활용하여 입력된 영화의 한국 배급 가능성을 종합 분석합니다.
+
+【제작 상태별 검색 지침】
+- pre-production: 개발 공지 기사, 감독/배우 캐스팅 확정 뉴스 중심
+- in-production: 촬영 현장 기사, 첫 스틸 및 예고편, 시장 반응 예측 중심
+- completed: 영화제 상영 리뷰, 시사회 반응, 배급 계약/판매 뉴스 중심
+- released: 최종 박스오피스 성적, 비평·관객 반응, 한국 개봉 이력 중심
+
+【필수 검색 소스 — 모두 검색할 것】
+1. IMDb, Rotten Tomatoes — 기본 정보 및 평점
+2. Variety (variety.com) — 기사, 리뷰, 박스오피스
+3. The Hollywood Reporter (hollywoodreporter.com) — 기사 및 비평
+4. Screen International, Deadline Hollywood — 영화제/마켓 뉴스
+5. Reddit: r/movies, r/criterion, r/filmfestivals, 장르 서브레딧
+6. 익스트림무비(extrememovie.com) — 국내 영화 커뮤니티 반응
+7. 무비코리아, 네이버 영화, 왓챠피디아 — 국내 기대감 및 커뮤니티 DB
+8. KOBIS(kobis.or.kr) — 한국 유사 장르 영화 박스오피스
+
+【중요】tradePressAndBuzz의 url 필드는 반드시 웹 검색으로 실제 확인된 URL만 기재할 것.
+찾지 못한 경우 url 필드를 빈 문자열("")로 기입하세요. URL을 절대 추측하거나 생성하지 마세요.
+
+아래 JSON 형식으로만 응답하세요. JSON 외 다른 텍스트나 마크다운 코드블록은 절대 포함 금지:
+
+{"filmOverview":{"title":"","koreanTitle":"","year":"","country":"","genre":"","runtime":"","status":"","releaseDate":"","imdbRating":"","rtScore":"","synopsis":"","awards":"","festivalHistory":""},"tradePressAndBuzz":{"tradeArticles":[{"source":"","title":"","url":"","date":"","summary":""}],"communityBuzz":[{"platform":"","title":"","url":"","sentiment":"","note":""}],"festivalReviews":[{"source":"","title":"","url":"","sentiment":""}],"overallSentiment":"","buzzSummary":""},"directorAnalysis":{"name":"","nationality":"","careerSummary":"","majorWorks":[{"title":"","year":"","globalBO":"","koreanBO":""}],"koreanMarketSummary":"","acquisitionValue":""},"castAnalysis":[{"name":"","role":"","nationality":"","koreanRecognition":"","majorWorks":[{"title":"","year":"","note":""}],"marketingValue":""}],"marketAnalysis":{"opportunities":[{"factor":"","description":""}],"threats":[{"factor":"","description":""}],"comparableFilms":[{"title":"","koreanBO":"","relevance":""}],"optimalReleaseWindow":""},"marketingPlan":{"primaryTarget":"","secondaryTarget":"","keywords":[],"taglines":[],"platformStrategy":"","keySellingPoints":[],"theatricalStrategy":{"releaseType":"","recommendedScreenCount":"","targetTheatreChains":"","releaseTimingSuggestion":"","competitionAnalysis":"","platformWindowStrategy":""}},"pressReleaseDraft":"","overallAssessment":{"acquisitionScore":7,"recommendation":"","expectedAudienceRange":"","keyRisks":"","finalOpinion":""}}
+
+위 JSON 스키마를 실제 분석 결과로 채워서 반환하세요.`;
+
+    /* ═══════════════════════════════════════════════════
+       EXPORT HELPERS
+    ═══════════════════════════════════════════════════ */
+    function downloadCSV(R, title) {
+      const ov = R?.filmOverview, oa = R?.overallAssessment,
+            mp = R?.marketingPlan, ts = mp?.theatricalStrategy,
+            bz = R?.tradePressAndBuzz;
+      const rows = [
+        ["항목","내용"],
+        ["영화 제목 (영문)", ov?.title||""],
+        ["영화 제목 (한국어)", ov?.koreanTitle||""],
+        ["제작 상태", ov?.status||""],
+        ["제작연도", ov?.year||""],
+        ["제작국가", ov?.country||""],
+        ["장르", ov?.genre||""],
+        ["상영시간", ov?.runtime||""],
+        ["개봉일/예정", ov?.releaseDate||""],
+        ["IMDb 평점", ov?.imdbRating||""],
+        ["RT 점수", ov?.rtScore||""],
+        ["영화제 이력", ov?.festivalHistory||""],
+        ["시놉시스", ov?.synopsis||""],
+        ["",""],
+        ["구매 점수 (10점 만점)", oa?.acquisitionScore||""],
+        ["구매 추천 여부", oa?.recommendation||""],
+        ["예상 관객 수", oa?.expectedAudienceRange||""],
+        ["핵심 리스크", oa?.keyRisks||""],
+        ["종합 의견", oa?.finalOpinion||""],
+        ["",""],
+        ["감독명", R?.directorAnalysis?.name||""],
+        ["감독 국적", R?.directorAnalysis?.nationality||""],
+        ["감독 경력 요약", R?.directorAnalysis?.careerSummary||""],
+        ["한국 시장 실적", R?.directorAnalysis?.koreanMarketSummary||""],
+        ["",""],
+        ["핵심 타겟", mp?.primaryTarget||""],
+        ["부차 타겟", mp?.secondaryTarget||""],
+        ["키워드", (mp?.keywords||[]).join(", ")],
+        ["카피라인", (mp?.taglines||[]).join(" / ")],
+        ["",""],
+        ["극장 배급 유형", ts?.releaseType||""],
+        ["추천 개봉 시기", ts?.releaseTimingSuggestion||""],
+        ["추천 상영관 수", ts?.recommendedScreenCount||""],
+        ["극장 체인 전략", ts?.targetTheatreChains||""],
+        ["경쟁작 분석", ts?.competitionAnalysis||""],
+        ["OTT 전환 전략", ts?.platformWindowStrategy||""],
+        ["",""],
+        ["전반적 버즈 반응", bz?.overallSentiment||""],
+        ["버즈 요약", bz?.buzzSummary||""],
+        ["",""],
+        ["보도자료 초안", R?.pressReleaseDraft||""],
+      ];
+      const csv = rows.map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(",")).join("\r\n");
+      const blob = new Blob(["\uFEFF"+csv],{type:"text/csv;charset=utf-8;"});
+      const a=document.createElement("a"); a.href=URL.createObjectURL(blob);
+      a.download=`PRIZM_${(title||"film").replace(/\s+/g,"_")}_${new Date().toISOString().slice(0,10)}.csv`;
+      a.click();
+    }
+
+    function downloadTXT(R, title) {
+      const ts=R?.marketingPlan?.theatricalStrategy, hr="─".repeat(56);
+      const lines=[
+        "PRIZM — Film Acquisition Intelligence",hr,
+        `분석 리포트: ${R?.filmOverview?.title||title}`,
+        `생성일: ${new Date().toLocaleDateString("ko-KR")}`,
+        hr,"",
+        "■ 영화 기본 정보",
+        `  제목 (영문): ${R?.filmOverview?.title}`,
+        `  제목 (한국어): ${R?.filmOverview?.koreanTitle}`,
+        `  제작 상태: ${R?.filmOverview?.status}`,
+        `  제작연도 / 국가: ${R?.filmOverview?.year} / ${R?.filmOverview?.country}`,
+        `  장르 / 상영시간: ${R?.filmOverview?.genre} / ${R?.filmOverview?.runtime}`,
+        `  개봉일/예정: ${R?.filmOverview?.releaseDate}`,
+        `  IMDb: ${R?.filmOverview?.imdbRating}  |  RT: ${R?.filmOverview?.rtScore}`,
+        `  영화제: ${R?.filmOverview?.festivalHistory}`,
+        `  시놉시스: ${R?.filmOverview?.synopsis}`,
+        "","■ 종합 평가",
+        `  점수: ${R?.overallAssessment?.acquisitionScore}/10`,
+        `  추천: ${R?.overallAssessment?.recommendation}`,
+        `  예상 관객: ${R?.overallAssessment?.expectedAudienceRange}`,
+        `  리스크: ${R?.overallAssessment?.keyRisks}`,
+        `  의견: ${R?.overallAssessment?.finalOpinion}`,
+        "","■ 감독 분석",
+        `  감독: ${R?.directorAnalysis?.name} (${R?.directorAnalysis?.nationality})`,
+        `  ${R?.directorAnalysis?.careerSummary}`,
+        `  한국 시장: ${R?.directorAnalysis?.koreanMarketSummary}`,
+        "","■ 마케팅 플랜",
+        `  타겟: ${R?.marketingPlan?.primaryTarget}`,
+        `  키워드: ${(R?.marketingPlan?.keywords||[]).join(", ")}`,
+        "  카피라인:",
+        ...(R?.marketingPlan?.taglines||[]).map(t=>`    · "${t}"`),
+        "","■ 극장 배급 전략",
+        `  유형: ${ts?.releaseType}`,
+        `  개봉 시기: ${ts?.releaseTimingSuggestion}`,
+        `  상영관 수: ${ts?.recommendedScreenCount}`,
+        `  체인 전략: ${ts?.targetTheatreChains}`,
+        `  경쟁작: ${ts?.competitionAnalysis}`,
+        `  OTT 전환: ${ts?.platformWindowStrategy}`,
+        "",hr,"■ 보도자료 초안",hr,
+        R?.pressReleaseDraft||"",
+      ];
+      const blob=new Blob([lines.join("\n")],{type:"text/plain;charset=utf-8;"});
+      const a=document.createElement("a"); a.href=URL.createObjectURL(blob);
+      a.download=`PRIZM_${(title||"film").replace(/\s+/g,"_")}_${new Date().toISOString().slice(0,10)}.txt`;
+      a.click();
+    }
+
+    /* ═══════════════════════════════════════════════════
+       SMALL UI COMPONENTS
+    ═══════════════════════════════════════════════════ */
+    const Badge = ({c,bg,border,children,style={}}) => (
+      <span style={{display:"inline-block",background:bg||"var(--bg-secondary)",color:c||"var(--text-secondary)",
+        border:`1px solid ${border||(c?c+"30":"var(--border-tertiary)")}`,
+        borderRadius:20,padding:"3px 11px",fontSize:12,fontWeight:500,whiteSpace:"nowrap",...style}}>
+        {children}
+      </span>
+    );
+
+    const Row = ({label,value}) => {
+      if (!value||["N/A","해당없음","미정",""].includes(String(value).trim())) return null;
+      return (
+        <div style={{display:"flex",gap:14,marginBottom:10,alignItems:"flex-start"}}>
+          <span style={{color:"var(--text-tertiary)",fontSize:12,minWidth:96,flexShrink:0,paddingTop:2}}>{label}</span>
+          <span style={{color:"var(--text-primary)",fontSize:14,lineHeight:1.65,flex:1}}>{value}</span>
+        </div>
+      );
+    };
+
+    const Card = ({children,style={}}) => (
+      <div style={{background:"var(--bg-primary)",border:"0.5px solid var(--border-tertiary)",
+        borderRadius:"var(--radius-lg)",padding:"20px 22px",marginBottom:14,...style}}>
+        {children}
+      </div>
+    );
+
+    const SH = ({children,accent,style={}}) => (
+      <h2 style={{fontFamily:"'Playfair Display',Georgia,serif",fontSize:16,fontWeight:700,
+        color:accent||"var(--text-primary)",margin:"0 0 15px",letterSpacing:"-0.01em",...style}}>
+        {children}
+      </h2>
+    );
+
+    const LinkRow = ({title,source,date,url,sentimentKey,note}) => {
+      const s=SENT_CFG[sentimentKey]||SENT_CFG.unknown;
+      const live=url&&url.length>10&&url.startsWith("http");
+      return (
+        <div style={{padding:"11px 0",borderBottom:"0.5px solid var(--border-tertiary)"}}>
+          <div style={{display:"flex",flexWrap:"wrap",gap:6,alignItems:"center",marginBottom:4}}>
+            {source&&<span style={{fontSize:11,fontWeight:600,color:"var(--text-secondary)",textTransform:"uppercase",letterSpacing:"0.05em"}}>{source}</span>}
+            {date&&<span style={{fontSize:11,color:"var(--text-tertiary)"}}>{date}</span>}
+            <Badge c={s.c} bg={s.bg}>{s.label}</Badge>
+          </div>
+          {live
+            ?<a href={url} target="_blank" rel="noopener noreferrer"
+               style={{color:"var(--text-info)",fontSize:13,fontWeight:500,lineHeight:1.5,display:"block"}}>
+               {title} ↗</a>
+            :<span style={{color:"var(--text-primary)",fontSize:13,fontWeight:500,lineHeight:1.5,display:"block"}}>{title}</span>
+          }
+          {note&&<p style={{color:"var(--text-secondary)",fontSize:12,margin:"4px 0 0",lineHeight:1.5}}>{note}</p>}
+        </div>
+      );
+    };
+
+    /* ═══════════════════════════════════════════════════
+       API KEY SCREEN
+    ═══════════════════════════════════════════════════ */
+    function ApiKeyScreen({onSave}) {
+      const [key,setKey]=useState("");
+      const [show,setShow]=useState(false);
+      return (
+        <div style={{minHeight:"100vh",background:"#1a1928",display:"flex",alignItems:"center",justifyContent:"center",padding:24}}>
+          <div style={{background:"#ffffff",borderRadius:20,padding:"48px 40px",maxWidth:460,width:"100%",boxShadow:"0 32px 80px rgba(0,0,0,0.35)"}}>
+            {/* Logo */}
+            <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:36}}>
+              <div style={{display:"flex",gap:3}}>{[...Array(5)].map((_,i)=>(
+                <div key={i} style={{width:8,height:6,background:"#1a1928",borderRadius:1,opacity:0.15+i*0.15}}/>
+              ))}</div>
+              <div>
+                <div style={{fontFamily:"'Playfair Display',serif",fontSize:28,fontWeight:900,color:"#c9292b",lineHeight:1,letterSpacing:"0.02em"}}>PRIZM</div>
+                <div style={{fontSize:9,color:"#9a9898",letterSpacing:"0.15em",textTransform:"uppercase"}}>Film Acquisition Intelligence</div>
+              </div>
+            </div>
+
+            <h1 style={{fontFamily:"'Playfair Display',serif",fontSize:22,fontWeight:700,marginBottom:8,color:"#1a1917",lineHeight:1.3}}>
+              API 키를 입력하세요
+            </h1>
+            <p style={{fontSize:13,color:"#6b6966",lineHeight:1.7,marginBottom:28}}>
+              Anthropic API 키는 브라우저에만 저장되며 외부로 전송되지 않습니다.<br/>
+              <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener noreferrer"
+                 style={{color:"#c9292b"}}>console.anthropic.com</a>에서 발급받을 수 있습니다.
+            </p>
+
+            <div style={{position:"relative",marginBottom:16}}>
+              <input
+                type={show?"text":"password"}
+                value={key}
+                onChange={e=>setKey(e.target.value)}
+                onKeyDown={e=>e.key==="Enter"&&key.startsWith("sk-")&&onSave(key.trim())}
+                placeholder="sk-ant-api..."
+                style={{width:"100%",border:"1.5px solid #dedad5",borderRadius:10,padding:"13px 48px 13px 16px",
+                  fontSize:14,color:"#1a1917",background:"#faf9f8"}}
+              />
+              <button onClick={()=>setShow(s=>!s)}
+                style={{position:"absolute",right:12,top:"50%",transform:"translateY(-50%)",
+                  background:"none",border:"none",cursor:"pointer",color:"#9a9898",fontSize:13,padding:4}}>
+                {show?"숨기기":"표시"}
+              </button>
+            </div>
+
+            <button
+              onClick={()=>key.startsWith("sk-")&&onSave(key.trim())}
+              disabled={!key.startsWith("sk-")}
+              style={{width:"100%",background:key.startsWith("sk-")?"#c9292b":"#e0ddd9",
+                border:"none",borderRadius:10,color:"#fff",padding:"14px",fontSize:15,fontWeight:500,
+                cursor:key.startsWith("sk-")?"pointer":"not-allowed",transition:"background .2s"}}>
+              PRIZM 시작하기 →
+            </button>
+
+            <p style={{fontSize:11,color:"#b0ada8",marginTop:16,textAlign:"center",lineHeight:1.6}}>
+              키는 이 기기의 로컬 스토리지에만 저장됩니다.<br/>
+              공용 PC에서는 사용 후 설정에서 삭제하세요.
+            </p>
+          </div>
+        </div>
+      );
+    }
+
+    /* ═══════════════════════════════════════════════════
+       MAIN APP
+    ═══════════════════════════════════════════════════ */
+    function App() {
+      const [apiKey, setApiKey]     = useState(() => localStorage.getItem("prizm:apikey")||"");
+      const [view,   setView]       = useState("form");
+      const [form,   setForm]       = useState({titleEn:"",titleKo:"",director:"",cast:"",genre:"",country:"",year:"",status:"",source:"",synopsis:""});
+      const [result, setResult]     = useState(null);
+      const [error,  setError]      = useState("");
+      const [tab,    setTab]        = useState("overview");
+      const [loadStep,setLoadStep]  = useState(0);
+      const [history,setHistory]    = useState([]);
+      const [batch,  setBatch]      = useState([]);
+      const [copied, setCopied]     = useState("");
+      const [showSettings,setShowSettings] = useState(false);
+      const timerRef = useRef(null);
+
+      useEffect(() => {
+        try { const d=localStorage.getItem("prizm:history"); if(d) setHistory(JSON.parse(d)); } catch{}
+      }, []);
+
+      const saveApiKey = key => { localStorage.setItem("prizm:apikey",key); setApiKey(key); };
+      const clearApiKey = () => { localStorage.removeItem("prizm:apikey"); setApiKey(""); setShowSettings(false); };
+
+      const saveHistory = (r, fd) => {
+        const entry = { id:Date.now(), date:new Date().toISOString(),
+          title:r.filmOverview?.title||fd.titleEn, koreanTitle:r.filmOverview?.koreanTitle||fd.titleKo,
+          status:r.filmOverview?.status||fd.status, score:r.overallAssessment?.acquisitionScore,
+          recommendation:r.overallAssessment?.recommendation, result:r, form:fd };
+        const nh = [entry,...history].slice(0,60);
+        setHistory(nh);
+        try { localStorage.setItem("prizm:history",JSON.stringify(nh)); } catch{}
+      };
+
+      const runAnalysis = async (fd) => {
+        if (!fd.titleEn?.trim()||!fd.director?.trim()) { setError("영문 제목과 감독명은 필수 항목입니다."); return; }
+        setError(""); setView("loading"); setResult(null); setLoadStep(0);
+        let step=0;
+        timerRef.current = setInterval(()=>{ step=Math.min(step+1,LOAD_MSGS.length-1); setLoadStep(step); },2800);
+        try {
+          const info=[
+            `영문 제목: ${fd.titleEn}`,
+            fd.titleKo&&`한국어 제목: ${fd.titleKo}`,
+            `감독: ${fd.director}`,
+            fd.cast&&`주연배우: ${fd.cast}`,
+            fd.genre&&`장르: ${fd.genre}`,
+            fd.country&&`제작국가: ${fd.country}`,
+            fd.year&&`제작연도: ${fd.year}`,
+            fd.status&&`제작 상태: ${fd.status}`,
+            fd.source&&`원작: ${fd.source}`,
+            fd.synopsis&&`시놉시스 힌트: ${fd.synopsis}`,
+          ].filter(Boolean).join("\n");
+
+          const res = await fetch("https://api.anthropic.com/v1/messages",{
+            method:"POST",
+            headers:{"Content-Type":"application/json","x-api-key":apiKey,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
+            body:JSON.stringify({
+              model:"claude-sonnet-4-20250514", max_tokens:5000,
+              system:SYSTEM_PROMPT,
+              tools:[{type:"web_search_20250305",name:"web_search"}],
+              messages:[{role:"user",content:`${info}\n\nVariety, THR, Reddit, 익스트림무비 등 모든 소스를 웹 검색하여 종합 분석 JSON을 작성해주세요.`}],
+            }),
+          });
+          const data = await res.json();
+          if (data.error) throw new Error(data.error.message);
+          const texts=(data.content||[]).filter(b=>b.type==="text").map(b=>b.text);
+          const raw=texts[texts.length-1]||"";
+          const m=raw.match(/\{[\s\S]*\}/);
+          if (!m) throw new Error("결과 파싱 실패. 다시 시도해 주세요.");
+          const parsed=JSON.parse(m[0]);
+          saveHistory(parsed,fd);
+          setResult(parsed); setTab("overview"); setView("results");
+        } catch(err) {
+          setError(err.message); setView("form");
+        } finally { clearInterval(timerRef.current); }
+      };
+
+      const addToQueue = () => {
+        if (!form.titleEn?.trim()) return;
+        setBatch(q=>[...q,{...form}]);
+        setForm({titleEn:"",titleKo:"",director:"",cast:"",genre:"",country:"",year:"",status:"",source:"",synopsis:""});
+      };
+      const runQueue = async () => { const q=[...batch]; setBatch([]); for(const fd of q) await runAnalysis(fd); };
+
+      const share = () => {
+        const R=result;
+        const text=`[PRIZM 분석] ${R?.filmOverview?.title} (${R?.filmOverview?.koreanTitle}) — 구매 점수 ${R?.overallAssessment?.acquisitionScore}/10 · ${R?.overallAssessment?.recommendation}`;
+        if(navigator.share) { navigator.share({title:"PRIZM 영화 분석",text}); }
+        else { navigator.clipboard.writeText(text); setCopied("share"); setTimeout(()=>setCopied(""),2200); }
+      };
+
+      if (!apiKey) return <ApiKeyScreen onSave={saveApiKey}/>;
+
+      const R=result, ov=R?.filmOverview, sc=R?.overallAssessment?.acquisitionScore;
+      const stCfg=STATUS_CFG[ov?.status]||STATUS_CFG[form.status];
+      const recC=recColor(R?.overallAssessment?.recommendation);
+
+      const inp = { width:"100%",background:"var(--bg-primary)",border:"1px solid var(--border-secondary)",
+        borderRadius:"var(--radius-md)",color:"var(--text-primary)",padding:"10px 14px",fontSize:14 };
+
+      const F=(name,label,ph,req)=>(
+        <div key={name}>
+          <label style={{fontSize:11,color:"var(--text-secondary)",letterSpacing:"0.07em",textTransform:"uppercase",display:"block",marginBottom:6}}>
+            {label}{req&&<span style={{color:"#c9292b"}}> *</span>}
+          </label>
+          <input name={name} value={form[name]||""} placeholder={ph} style={inp}
+            onChange={e=>setForm(p=>({...p,[e.target.name]:e.target.value}))}/>
+        </div>
+      );
+
+      return (
+        <div style={{minHeight:"100vh",background:"var(--bg-tertiary)"}}>
+          {/* ── SETTINGS MODAL ── */}
+          {showSettings&&(
+            <div onClick={()=>setShowSettings(false)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.4)",zIndex:100,display:"flex",alignItems:"center",justifyContent:"center",padding:24}}>
+              <div onClick={e=>e.stopPropagation()} style={{background:"var(--bg-primary)",borderRadius:16,padding:"32px 28px",maxWidth:400,width:"100%",boxShadow:"0 20px 60px rgba(0,0,0,0.2)"}}>
+                <h2 style={{fontFamily:"'Playfair Display',serif",fontSize:20,fontWeight:700,marginBottom:8}}>설정</h2>
+                <p style={{fontSize:13,color:"var(--text-secondary)",lineHeight:1.6,marginBottom:24}}>
+                  현재 API 키: <span style={{fontFamily:"'DM Mono',monospace",fontSize:12,color:"var(--text-tertiary)"}}>
+                    {apiKey.slice(0,12)}…{apiKey.slice(-4)}</span>
+                </p>
+                <button onClick={clearApiKey} style={{width:"100%",background:"var(--bg-danger)",border:"1px solid var(--border-danger)",borderRadius:10,color:"var(--text-danger)",padding:"12px",fontSize:14,cursor:"pointer"}}>
+                  API 키 삭제 및 로그아웃
+                </button>
+                <button onClick={()=>setShowSettings(false)} style={{width:"100%",background:"transparent",border:"1px solid var(--border-secondary)",borderRadius:10,color:"var(--text-secondary)",padding:"12px",fontSize:14,cursor:"pointer",marginTop:8}}>
+                  닫기
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* ── HEADER ── */}
+          <header className="no-print" style={{background:"#1a1928",padding:"0 22px",display:"flex",alignItems:"center",height:54,gap:0,borderBottom:"1px solid rgba(255,255,255,0.05)"}}>
+            <div style={{display:"flex",gap:4,marginRight:14}}>
+              {[...Array(5)].map((_,i)=>(
+                <div key={i} style={{width:7,height:5,background:"rgba(255,255,255,0.15)",borderRadius:1}}/>
+              ))}
+            </div>
+            <div style={{cursor:"pointer"}} onClick={()=>setView("form")}>
+              <div style={{fontFamily:"'Playfair Display',serif",fontSize:22,fontWeight:900,color:"#c9292b",lineHeight:1,letterSpacing:"0.02em"}}>PRIZM</div>
+              <div style={{fontSize:9,color:"rgba(255,255,255,0.3)",letterSpacing:"0.15em",textTransform:"uppercase",marginTop:2}}>Film Acquisition Intelligence</div>
+            </div>
+            <div style={{flex:1}}/>
+            {/* Export buttons (results only) */}
+            {view==="results"&&(
+              <div className="no-print" style={{display:"flex",gap:6,marginRight:14}}>
+                {[
+                  {label:copied==="share"?"✓ 복사":"공유",action:share,key:"share"},
+                  {label:"CSV",action:()=>downloadCSV(R,ov?.title),key:"csv"},
+                  {label:"텍스트",action:()=>downloadTXT(R,ov?.title),key:"txt"},
+                  {label:"인쇄/PDF",action:()=>window.print(),key:"pdf"},
+                ].map(btn=>(
+                  <button key={btn.key} onClick={btn.action} style={{background:"transparent",border:"1px solid rgba(255,255,255,0.15)",
+                    borderRadius:8,color:copied==="share"&&btn.key==="share"?"#4ade80":"rgba(255,255,255,0.65)",
+                    padding:"5px 13px",fontSize:12,cursor:"pointer"}}>
+                    {btn.label}
+                  </button>
+                ))}
+              </div>
+            )}
+            <nav style={{display:"flex",gap:3}}>
+              {[{id:"form",label:"분석"},{id:"history",label:`히스토리${history.length?" "+history.length:""}`}].map(n=>(
+                <button key={n.id} onClick={()=>setView(n.id)} style={{background:view===n.id?"rgba(255,255,255,0.1)":"transparent",
+                  color:view===n.id?"rgba(255,255,255,0.9)":"rgba(255,255,255,0.45)",
+                  border:"none",borderRadius:8,padding:"6px 13px",fontSize:13,cursor:"pointer",fontWeight:view===n.id?500:400}}>
+                  {n.label}
+                </button>
+              ))}
+              <button onClick={()=>setShowSettings(true)} style={{background:"transparent",border:"none",color:"rgba(255,255,255,0.35)",
+                borderRadius:8,padding:"6px 10px",fontSize:16,cursor:"pointer"}} title="설정">⚙</button>
+            </nav>
+          </header>
+
+          <main style={{maxWidth:900,margin:"0 auto",padding:"28px 20px"}}>
+
+            {/* ══ FORM VIEW ══ */}
+            {view==="form"&&(
+              <div className="fade-up">
+                <div style={{marginBottom:24}}>
+                  <h1 style={{fontFamily:"'Playfair Display',serif",fontSize:28,fontWeight:700,margin:"0 0 8px",letterSpacing:"-0.02em",lineHeight:1.2}}>
+                    영화 구매 분석
+                  </h1>
+                  <p style={{color:"var(--text-secondary)",fontSize:14,margin:0,lineHeight:1.65}}>
+                    영화 정보를 입력하면 Variety · THR · IMDb · Reddit · 익스트림무비 등을 자동 검색하여 한국 배급 가능성 분석 리포트를 생성합니다.
+                  </p>
+                </div>
+
+                {error&&(
+                  <div style={{background:"var(--bg-danger)",border:"1px solid var(--border-danger)",borderRadius:"var(--radius-md)",padding:"10px 14px",marginBottom:16,color:"var(--text-danger)",fontSize:13}}>
+                    ⚠ {error}
+                  </div>
+                )}
+
+                <Card>
+                  {/* Status */}
+                  <div style={{marginBottom:22}}>
+                    <label style={{fontSize:11,color:"var(--text-secondary)",letterSpacing:"0.07em",textTransform:"uppercase",display:"block",marginBottom:9}}>
+                      제작 상태
+                    </label>
+                    <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+                      {Object.entries(STATUS_CFG).map(([val,cfg])=>(
+                        <button key={val} onClick={()=>setForm(p=>({...p,status:p.status===val?"":val}))}
+                          style={{background:form.status===val?cfg.bg:"transparent",color:form.status===val?cfg.c:"var(--text-secondary)",
+                            border:`1px solid ${form.status===val?cfg.border:"var(--border-tertiary)"}`,
+                            borderRadius:20,padding:"6px 16px",fontSize:13,cursor:"pointer",fontWeight:form.status===val?500:400,transition:"all .15s"}}>
+                          {cfg.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="grid-2" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"18px 24px",marginBottom:18}}>
+                    {F("titleEn","영문 제목","e.g. The Substance",true)}
+                    {F("titleKo","한국어 제목","e.g. 더 서브스턴스")}
+                    {F("director","감독","e.g. Coralie Fargeat",true)}
+                    {F("cast","주연배우","e.g. Demi Moore, Margaret Qualley")}
+                    {F("genre","장르","e.g. SF 스릴러 / 바디호러")}
+                    {F("country","제작국가","e.g. 프랑스 · 영국")}
+                    {F("year","제작연도","e.g. 2025")}
+                    {F("source","원작 정보","e.g. 동명 소설 원작 (저자명)")}
+                  </div>
+                  <div style={{marginBottom:22}}>
+                    <label style={{fontSize:11,color:"var(--text-secondary)",letterSpacing:"0.07em",textTransform:"uppercase",display:"block",marginBottom:6}}>
+                      시놉시스 <span style={{color:"var(--text-tertiary)",textTransform:"none",fontWeight:400,letterSpacing:0}}>(선택)</span>
+                    </label>
+                    <textarea name="synopsis" value={form.synopsis||""} placeholder="줄거리 또는 시놉시스를 입력하세요."
+                      onChange={e=>setForm(p=>({...p,synopsis:e.target.value}))}
+                      style={{...inp,height:80,resize:"vertical"}}/>
+                  </div>
+
+                  <div style={{display:"flex",gap:10}}>
+                    <button onClick={()=>runAnalysis(form)} style={{flex:1,background:"#c9292b",border:"none",borderRadius:"var(--radius-md)",
+                      color:"#fff",padding:"13px 20px",fontSize:15,fontWeight:500,cursor:"pointer",letterSpacing:"-0.01em"}}>
+                      🔍  AI 분석 시작
+                    </button>
+                    <button onClick={addToQueue} title="배치 큐에 추가" style={{background:"var(--bg-secondary)",border:"0.5px solid var(--border-secondary)",
+                      borderRadius:"var(--radius-md)",color:"var(--text-secondary)",padding:"13px 18px",fontSize:13,cursor:"pointer",whiteSpace:"nowrap"}}>
+                      + 큐
+                    </button>
+                  </div>
+                </Card>
+
+                {/* Batch Queue */}
+                {batch.length>0&&(
+                  <Card>
+                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
+                      <div>
+                        <SH>배치 큐</SH>
+                        <p style={{fontSize:12,color:"var(--text-tertiary)",margin:"-10px 0 0"}}>{batch.length}편 대기 중</p>
+                      </div>
+                      <button onClick={runQueue} style={{background:"#c9292b",border:"none",borderRadius:8,color:"#fff",padding:"8px 20px",fontSize:13,cursor:"pointer",fontWeight:500}}>
+                        모두 분석 →
+                      </button>
+                    </div>
+                    {batch.map((q,i)=>(
+                      <div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"9px 12px",background:"var(--bg-secondary)",borderRadius:8,marginBottom:6}}>
+                        <div style={{display:"flex",gap:10,alignItems:"center"}}>
+                          <span style={{fontSize:12,color:"var(--text-tertiary)",fontFamily:"'DM Mono',monospace"}}>{String(i+1).padStart(2,"0")}</span>
+                          <div>
+                            <span style={{fontSize:13,fontWeight:500}}>{q.titleEn}</span>
+                            {q.director&&<span style={{fontSize:12,color:"var(--text-secondary)",marginLeft:8}}>· {q.director}</span>}
+                          </div>
+                        </div>
+                        <button onClick={()=>setBatch(bq=>bq.filter((_,j)=>j!==i))}
+                          style={{background:"none",border:"none",color:"var(--text-tertiary)",cursor:"pointer",fontSize:18,padding:"0 6px",lineHeight:1}}>×</button>
+                      </div>
+                    ))}
+                  </Card>
+                )}
+              </div>
+            )}
+
+            {/* ══ LOADING VIEW ══ */}
+            {view==="loading"&&(
+              <div style={{textAlign:"center",padding:"80px 0"}}>
+                <div style={{width:60,height:60,margin:"0 auto 24px",borderRadius:"50%",border:"2px solid var(--border-tertiary)",borderTopColor:"#c9292b",animation:"spin 1s linear infinite"}}/>
+                <p style={{fontFamily:"'Playfair Display',serif",fontSize:24,fontWeight:700,color:"var(--text-primary)",margin:"0 0 8px"}}>분석 진행 중</p>
+                <p style={{color:"var(--text-secondary)",fontSize:14,margin:"0 0 32px"}}>{LOAD_MSGS[loadStep]}</p>
+                <div style={{display:"flex",gap:6,justifyContent:"center"}}>
+                  {LOAD_MSGS.map((_,i)=>(
+                    <div key={i} style={{height:5,borderRadius:3,width:i===loadStep?22:7,background:i===loadStep?"#c9292b":"var(--border-tertiary)",transition:"all .3s ease"}}/>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* ══ RESULTS VIEW ══ */}
+            {view==="results"&&R&&(
+              <div className="fade-up">
+                {/* Film title bar */}
+                <div style={{marginBottom:20}}>
+                  <div style={{display:"flex",flexWrap:"wrap",alignItems:"center",gap:7,marginBottom:9}}>
+                    {stCfg&&<Badge c={stCfg.c} bg={stCfg.bg} border={stCfg.border}>{stCfg.label}</Badge>}
+                    {ov?.imdbRating&&ov.imdbRating!=="N/A"&&<Badge c="#d97706" bg="rgba(217,119,6,0.1)">⭐ IMDb {ov.imdbRating}</Badge>}
+                    {ov?.rtScore&&ov.rtScore!=="N/A"&&<Badge c="#e55a00" bg="rgba(229,90,0,0.1)">🍅 RT {ov.rtScore}</Badge>}
+                    {R.overallAssessment?.recommendation&&(
+                      <Badge c={recC} bg={recC+"18"} border={recC+"40"} style={{fontWeight:600}}>
+                        {R.overallAssessment.recommendation}
+                      </Badge>
+                    )}
+                  </div>
+                  <h1 style={{fontFamily:"'Playfair Display',serif",fontSize:26,fontWeight:700,margin:"0 0 4px",letterSpacing:"-0.02em",lineHeight:1.2}}>
+                    {ov?.title}
+                    {ov?.year&&<span style={{color:"var(--text-tertiary)",fontSize:17,fontWeight:400,marginLeft:10}}>({ov.year})</span>}
+                  </h1>
+                  {ov?.koreanTitle&&<p style={{color:"var(--text-secondary)",fontSize:15,margin:0}}>{ov.koreanTitle}</p>}
+                </div>
+
+                {/* Tabs */}
+                <div className="no-print" style={{display:"flex",gap:4,overflowX:"auto",marginBottom:18,paddingBottom:2}}>
+                  {TABS.map(t=>(
+                    <button key={t.id} onClick={()=>setTab(t.id)} style={{background:tab===t.id?"var(--bg-primary)":"transparent",
+                      color:tab===t.id?"var(--text-primary)":"var(--text-secondary)",
+                      border:tab===t.id?"0.5px solid var(--border-secondary)":"0.5px solid transparent",
+                      borderRadius:"var(--radius-md)",padding:"8px 14px",fontSize:13,cursor:"pointer",whiteSpace:"nowrap",
+                      fontWeight:tab===t.id?500:400,transition:"all .15s"}}>
+                      {t.label}
+                    </button>
+                  ))}
+                  <div style={{flex:1}}/>
+                  <button onClick={()=>{setResult(null);setView("form");}} className="no-print" style={{background:"transparent",border:"0.5px solid var(--border-tertiary)",
+                    borderRadius:"var(--radius-md)",color:"var(--text-tertiary)",padding:"8px 14px",fontSize:12,cursor:"pointer"}}>
+                    + 새 분석
+                  </button>
+                </div>
+
+                {/* ── 개요 ── */}
+                {tab==="overview"&&(
+                  <Card>
+                    <SH>영화 기본 정보</SH>
+                    {stCfg&&(
+                      <div style={{display:"flex",flexWrap:"wrap",alignItems:"center",gap:10,padding:"10px 14px",background:stCfg.bg,borderRadius:9,border:`1px solid ${stCfg.border}`,marginBottom:16}}>
+                        <span style={{fontSize:13,fontWeight:600,color:stCfg.c}}>{stCfg.label}</span>
+                        {ov?.releaseDate&&!["미정",""].includes(ov.releaseDate)&&(
+                          <span style={{fontSize:12,color:stCfg.c,opacity:0.75}}>— 개봉 예정: {ov.releaseDate}</span>
+                        )}
+                      </div>
+                    )}
+                    <Row label="시놉시스" value={ov?.synopsis}/>
+                    <Row label="감독" value={R.directorAnalysis?.name}/>
+                    <Row label="장르" value={ov?.genre}/>
+                    <Row label="제작국가" value={ov?.country}/>
+                    <Row label="상영시간" value={ov?.runtime}/>
+                    <Row label="IMDb 평점" value={ov?.imdbRating!=="N/A"?ov?.imdbRating:null}/>
+                    <Row label="로튼토마토" value={ov?.rtScore!=="N/A"?ov?.rtScore:null}/>
+                    <Row label="영화제 이력" value={ov?.festivalHistory!=="해당없음"?ov?.festivalHistory:null}/>
+                    <Row label="수상 이력" value={ov?.awards!=="해당없음"?ov?.awards:null}/>
+                  </Card>
+                )}
+
+                {/* ── 언론·커뮤니티 ── */}
+                {tab==="buzz"&&(()=>{
+                  const bz=R.tradePressAndBuzz;
+                  if (!bz) return <Card><p style={{color:"var(--text-tertiary)",textAlign:"center",padding:"20px 0"}}>데이터 없음</p></Card>;
+                  const sentCfg=SENT_CFG[bz.overallSentiment]||SENT_CFG.unknown;
+                  return (
+                    <>
+                      <Card>
+                        <div style={{display:"flex",flexWrap:"wrap",gap:20,alignItems:"flex-start"}}>
+                          <div>
+                            <p style={{fontSize:11,color:"var(--text-tertiary)",textTransform:"uppercase",letterSpacing:"0.07em",margin:"0 0 8px"}}>전반적 반응</p>
+                            <Badge c={sentCfg.c} bg={sentCfg.bg} style={{fontSize:14,padding:"5px 16px"}}>{sentCfg.label}</Badge>
+                          </div>
+                          {bz.buzzSummary&&(
+                            <p style={{fontSize:14,color:"var(--text-secondary)",lineHeight:1.7,flex:1,margin:0,maxWidth:580,paddingTop:2}}>{bz.buzzSummary}</p>
+                          )}
+                        </div>
+                      </Card>
+                      {bz.tradeArticles?.length>0&&(
+                        <Card>
+                          <SH>해외 영화 전문지 <span style={{fontSize:12,fontWeight:400,fontFamily:"'DM Sans',sans-serif",color:"var(--text-tertiary)"}}>Variety · THR · Screen International 등</span></SH>
+                          {bz.tradeArticles.map((a,i)=>(
+                            <LinkRow key={i} title={a.title} source={a.source} date={a.date} url={a.url} sentimentKey="unknown" note={a.summary}/>
+                          ))}
+                        </Card>
+                      )}
+                      {bz.festivalReviews?.length>0&&(
+                        <Card>
+                          <SH>영화제 시사 리뷰</SH>
+                          {bz.festivalReviews.map((a,i)=>(
+                            <LinkRow key={i} title={a.title} source={a.source} url={a.url} sentimentKey={a.sentiment}/>
+                          ))}
+                        </Card>
+                      )}
+                      {bz.communityBuzz?.length>0&&(
+                        <Card>
+                          <SH>커뮤니티 반응 <span style={{fontSize:12,fontWeight:400,fontFamily:"'DM Sans',sans-serif",color:"var(--text-tertiary)"}}>Reddit · 익스트림무비 · 무비코리아 등</span></SH>
+                          {bz.communityBuzz.map((b,i)=>(
+                            <LinkRow key={i} title={b.title} source={b.platform} url={b.url} sentimentKey={b.sentiment} note={b.note}/>
+                          ))}
+                        </Card>
+                      )}
+                    </>
+                  );
+                })()}
+
+                {/* ── 감독·배우 ── */}
+                {tab==="cast"&&(
+                  <>
+                    {R.directorAnalysis&&(
+                      <Card>
+                        <SH>감독</SH>
+                        <div style={{display:"flex",flexWrap:"wrap",alignItems:"center",gap:10,marginBottom:14}}>
+                          <span style={{fontFamily:"'Playfair Display',serif",fontSize:20,fontWeight:700}}>{R.directorAnalysis.name}</span>
+                          {R.directorAnalysis.nationality&&<Badge>{R.directorAnalysis.nationality}</Badge>}
+                        </div>
+                        <p style={{fontSize:14,color:"var(--text-secondary)",lineHeight:1.72,margin:"0 0 18px"}}>{R.directorAnalysis.careerSummary}</p>
+                        {R.directorAnalysis.majorWorks?.length>0&&(
+                          <div style={{marginBottom:18,overflowX:"auto"}}>
+                            <p style={{fontSize:11,color:"var(--text-tertiary)",textTransform:"uppercase",letterSpacing:"0.07em",marginBottom:10}}>주요 작품 박스오피스</p>
+                            <table style={{width:"100%",borderCollapse:"collapse",fontSize:13}}>
+                              <thead>
+                                <tr style={{borderBottom:"0.5px solid var(--border-secondary)"}}>
+                                  {["작품명","연도","글로벌 흥행","한국 흥행"].map(h=>(
+                                    <th key={h} style={{textAlign:"left",color:"var(--text-tertiary)",padding:"5px 10px",fontWeight:400,fontSize:11,textTransform:"uppercase",letterSpacing:"0.05em"}}>{h}</th>
+                                  ))}
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {R.directorAnalysis.majorWorks.map((w,i)=>(
+                                  <tr key={i} style={{borderBottom:"0.5px solid var(--border-tertiary)"}}>
+                                    <td style={{padding:"10px",fontWeight:500}}>{w.title}</td>
+                                    <td style={{padding:"10px",color:"var(--text-tertiary)",fontFamily:"'DM Mono',monospace",fontSize:12}}>{w.year}</td>
+                                    <td style={{padding:"10px",color:"var(--text-secondary)"}}>{w.globalBO}</td>
+                                    <td style={{padding:"10px",color:"var(--text-secondary)"}}>{w.koreanBO}</td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        )}
+                        <Row label="한국 시장" value={R.directorAnalysis.koreanMarketSummary}/>
+                        <div style={{background:"var(--bg-secondary)",borderRadius:8,padding:"12px 16px",marginTop:8}}>
+                          <p style={{fontSize:11,color:"var(--text-tertiary)",margin:"0 0 5px",textTransform:"uppercase",letterSpacing:"0.07em"}}>구매 메리트</p>
+                          <p style={{fontSize:14,color:"var(--text-primary)",margin:0,lineHeight:1.65}}>{R.directorAnalysis.acquisitionValue}</p>
+                        </div>
+                      </Card>
+                    )}
+                    {R.castAnalysis?.map((actor,i)=>{
+                      const rcMap={높음:{c:"#059669",bg:"rgba(5,150,105,0.1)"},중간:{c:"#d97706",bg:"rgba(217,119,6,0.1)"},낮음:{c:"#6b7280",bg:"rgba(107,114,128,0.1)"}};
+                      const rc=rcMap[actor.koreanRecognition]||rcMap["낮음"];
+                      return (
+                        <Card key={i}>
+                          <div style={{display:"flex",flexWrap:"wrap",alignItems:"center",gap:8,marginBottom:12}}>
+                            <span style={{fontFamily:"'Playfair Display',serif",fontSize:18,fontWeight:700}}>{actor.name}</span>
+                            {actor.nationality&&<Badge>{actor.nationality}</Badge>}
+                            {actor.role&&<span style={{fontSize:13,color:"var(--text-tertiary)"}}>役 {actor.role}</span>}
+                            {actor.koreanRecognition&&<Badge c={rc.c} bg={rc.bg}>한국 인지도 {actor.koreanRecognition}</Badge>}
+                          </div>
+                          {actor.majorWorks?.map((w,j)=>(
+                            <div key={j} style={{fontSize:13,color:"var(--text-secondary)",marginBottom:4}}>
+                              <span style={{color:"var(--text-primary)",fontWeight:500}}>{w.title}</span>
+                              <span style={{color:"var(--text-tertiary)"}}> ({w.year})</span>
+                              {w.note&&<span> — {w.note}</span>}
+                            </div>
+                          ))}
+                          <p style={{fontSize:13,color:"var(--text-secondary)",margin:"10px 0 0",lineHeight:1.65,borderTop:"0.5px solid var(--border-tertiary)",paddingTop:10}}>{actor.marketingValue}</p>
+                        </Card>
+                      );
+                    })}
+                  </>
+                )}
+
+                {/* ── 시장 분석 ── */}
+                {tab==="market"&&(
+                  <>
+                    <div className="grid-2" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14,marginBottom:14}}>
+                      <Card style={{marginBottom:0}}>
+                        <SH accent="#059669">기회 요인</SH>
+                        {R.marketAnalysis?.opportunities?.map((o,i)=>(
+                          <div key={i} style={{borderLeft:"3px solid rgba(5,150,105,0.35)",paddingLeft:14,marginBottom:16}}>
+                            <p style={{fontSize:14,fontWeight:500,color:"#059669",margin:"0 0 4px"}}>{o.factor}</p>
+                            <p style={{fontSize:13,color:"var(--text-secondary)",margin:0,lineHeight:1.65}}>{o.description}</p>
+                          </div>
+                        ))}
+                      </Card>
+                      <Card style={{marginBottom:0}}>
+                        <SH accent="#c9292b">위협 요인</SH>
+                        {R.marketAnalysis?.threats?.map((t,i)=>(
+                          <div key={i} style={{borderLeft:"3px solid rgba(201,41,43,0.35)",paddingLeft:14,marginBottom:16}}>
+                            <p style={{fontSize:14,fontWeight:500,color:"#c9292b",margin:"0 0 4px"}}>{t.factor}</p>
+                            <p style={{fontSize:13,color:"var(--text-secondary)",margin:0,lineHeight:1.65}}>{t.description}</p>
+                          </div>
+                        ))}
+                      </Card>
+                    </div>
+                    {R.marketAnalysis?.comparableFilms?.length>0&&(
+                      <Card>
+                        <SH>유사 작품 한국 흥행 비교</SH>
+                        <div style={{overflowX:"auto"}}>
+                          <table style={{width:"100%",borderCollapse:"collapse",fontSize:13}}>
+                            <thead>
+                              <tr style={{borderBottom:"0.5px solid var(--border-secondary)"}}>
+                                {["비교 영화","한국 흥행","비교 근거"].map(h=>(
+                                  <th key={h} style={{textAlign:"left",color:"var(--text-tertiary)",padding:"5px 10px",fontWeight:400,fontSize:11,textTransform:"uppercase",letterSpacing:"0.05em"}}>{h}</th>
+                                ))}
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {R.marketAnalysis.comparableFilms.map((f,i)=>(
+                                <tr key={i} style={{borderBottom:"0.5px solid var(--border-tertiary)"}}>
+                                  <td style={{padding:"10px",fontWeight:500}}>{f.title}</td>
+                                  <td style={{padding:"10px",color:"#d97706",fontFamily:"'DM Mono',monospace",fontSize:12}}>{f.koreanBO}</td>
+                                  <td style={{padding:"10px",color:"var(--text-secondary)"}}>{f.relevance}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                        {R.marketAnalysis.optimalReleaseWindow&&(
+                          <div style={{marginTop:16,background:"var(--bg-secondary)",borderRadius:8,padding:"12px 16px"}}>
+                            <p style={{fontSize:11,color:"var(--text-tertiary)",margin:"0 0 5px",textTransform:"uppercase",letterSpacing:"0.07em"}}>추천 개봉 시즌</p>
+                            <p style={{fontSize:14,margin:0}}>{R.marketAnalysis.optimalReleaseWindow}</p>
+                          </div>
+                        )}
+                      </Card>
+                    )}
+                  </>
+                )}
+
+                {/* ── 마케팅 플랜 ── */}
+                {tab==="marketing"&&(()=>{
+                  const mp=R.marketingPlan, ts=mp?.theatricalStrategy;
+                  return (
+                    <>
+                      <Card>
+                        <SH>타겟 & 키워드</SH>
+                        <div className="grid-2" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:20,marginBottom:20}}>
+                          <div>
+                            <p style={{fontSize:11,color:"var(--text-tertiary)",textTransform:"uppercase",letterSpacing:"0.07em",margin:"0 0 8px"}}>핵심 타겟</p>
+                            <p style={{fontSize:14,margin:0,lineHeight:1.65}}>{mp?.primaryTarget}</p>
+                          </div>
+                          <div>
+                            <p style={{fontSize:11,color:"var(--text-tertiary)",textTransform:"uppercase",letterSpacing:"0.07em",margin:"0 0 8px"}}>부차 타겟</p>
+                            <p style={{fontSize:14,color:"var(--text-secondary)",margin:0,lineHeight:1.65}}>{mp?.secondaryTarget}</p>
+                          </div>
+                        </div>
+                        {mp?.keywords?.length>0&&(
+                          <div>
+                            <p style={{fontSize:11,color:"var(--text-tertiary)",textTransform:"uppercase",letterSpacing:"0.07em",margin:"0 0 10px"}}>마케팅 키워드</p>
+                            {mp.keywords.map((k,i)=>(
+                              <span key={i} style={{display:"inline-block",background:"var(--bg-secondary)",color:"var(--text-secondary)",border:"0.5px solid var(--border-tertiary)",borderRadius:20,padding:"4px 12px",fontSize:13,margin:"2px 4px 2px 0"}}>#{k}</span>
+                            ))}
+                          </div>
+                        )}
+                      </Card>
+                      <Card>
+                        <SH>카피라인 제안</SH>
+                        {mp?.taglines?.map((t,i)=>(
+                          <div key={i} style={{background:"var(--bg-secondary)",borderLeft:"3px solid #c9292b",borderRadius:"0 8px 8px 0",padding:"14px 18px",marginBottom:10}}>
+                            <span style={{fontFamily:"'Playfair Display',serif",fontSize:17,color:"var(--text-primary)",fontStyle:"italic"}}>"{t}"</span>
+                          </div>
+                        ))}
+                      </Card>
+                      {ts&&(
+                        <Card>
+                          <SH accent="#c9292b">극장 배급 전략</SH>
+                          <div style={{background:"var(--bg-secondary)",borderRadius:10,padding:"16px 18px",marginBottom:16}}>
+                            <p style={{fontSize:11,color:"var(--text-tertiary)",textTransform:"uppercase",letterSpacing:"0.07em",margin:"0 0 8px"}}>개봉 유형</p>
+                            <p style={{fontSize:16,fontWeight:500,color:"#c9292b",margin:0,lineHeight:1.4}}>{ts.releaseType}</p>
+                          </div>
+                          <Row label="추천 개봉 시기" value={ts.releaseTimingSuggestion}/>
+                          <Row label="추천 상영관 수" value={ts.recommendedScreenCount}/>
+                          <Row label="극장 체인 전략" value={ts.targetTheatreChains}/>
+                          <Row label="경쟁작 분석" value={ts.competitionAnalysis}/>
+                          <Row label="OTT 전환 전략" value={ts.platformWindowStrategy}/>
+                        </Card>
+                      )}
+                      {mp?.keySellingPoints?.length>0&&(
+                        <Card>
+                          <SH>핵심 셀링 포인트</SH>
+                          {mp.keySellingPoints.map((sp,i)=>(
+                            <div key={i} style={{display:"flex",gap:12,marginBottom:12,alignItems:"flex-start"}}>
+                              <span style={{color:"#c9292b",fontSize:13,flexShrink:0,marginTop:3}}>◆</span>
+                              <p style={{fontSize:14,margin:0,lineHeight:1.65}}>{sp}</p>
+                            </div>
+                          ))}
+                        </Card>
+                      )}
+                      {mp?.platformStrategy&&(
+                        <Card>
+                          <SH>디지털 · SNS · OTT 플랫폼 전략</SH>
+                          <p style={{fontSize:14,color:"var(--text-secondary)",margin:0,lineHeight:1.75}}>{mp.platformStrategy}</p>
+                        </Card>
+                      )}
+                    </>
+                  );
+                })()}
+
+                {/* ── 보도자료 ── */}
+                {tab==="press"&&(
+                  <Card>
+                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:18}}>
+                      <SH>보도자료 초안</SH>
+                      <button onClick={()=>{navigator.clipboard.writeText(R.pressReleaseDraft||"");setCopied("press");setTimeout(()=>setCopied(""),2200);}}
+                        style={{background:copied==="press"?"var(--bg-success)":"var(--bg-secondary)",
+                          border:`0.5px solid ${copied==="press"?"var(--border-success)":"var(--border-secondary)"}`,
+                          borderRadius:8,color:copied==="press"?"var(--text-success)":"var(--text-secondary)",
+                          padding:"7px 18px",fontSize:13,cursor:"pointer",transition:"all .2s"}}>
+                        {copied==="press"?"✓ 복사됨":"복사"}
+                      </button>
+                    </div>
+                    <div style={{background:"var(--bg-secondary)",borderRadius:10,padding:"22px 24px",lineHeight:1.9,fontSize:14.5,whiteSpace:"pre-wrap"}}>
+                      {R.pressReleaseDraft}
+                    </div>
+                    <p style={{fontSize:12,color:"var(--text-tertiary)",margin:"10px 0 0",textAlign:"right"}}>* AI 생성 초안 — 개봉 확정 후 날짜·배급사명 등 수정하여 사용하세요.</p>
+                  </Card>
+                )}
+
+                {/* ── 종합 평가 ── */}
+                {tab==="verdict"&&(
+                  <Card>
+                    <div style={{display:"flex",gap:24,alignItems:"flex-start",flexWrap:"wrap",marginBottom:24}}>
+                      <div style={{textAlign:"center",minWidth:100}}>
+                        <div style={{fontFamily:"'Playfair Display',serif",fontSize:72,fontWeight:900,color:scoreColor(sc),lineHeight:1}}>{sc||"—"}</div>
+                        <div style={{fontSize:12,color:"var(--text-tertiary)",marginTop:4}}>/10점</div>
+                      </div>
+                      <div style={{flex:1}}>
+                        {R.overallAssessment?.recommendation&&(
+                          <div style={{display:"inline-block",background:recC+"15",color:recC,border:`1px solid ${recC}40`,borderRadius:9,padding:"8px 20px",fontSize:15,fontWeight:600,marginBottom:14}}>
+                            {R.overallAssessment.recommendation}
+                          </div>
+                        )}
+                        <Row label="예상 관객 수" value={R.overallAssessment?.expectedAudienceRange}/>
+                      </div>
+                    </div>
+                    {R.overallAssessment?.keyRisks&&(
+                      <div style={{background:"var(--bg-danger)",border:"1px solid var(--border-danger)",borderRadius:9,padding:"14px 18px",marginBottom:18}}>
+                        <p style={{fontSize:12,color:"var(--text-danger)",margin:"0 0 5px",fontWeight:600}}>핵심 리스크</p>
+                        <p style={{fontSize:14,margin:0,lineHeight:1.65}}>{R.overallAssessment.keyRisks}</p>
+                      </div>
+                    )}
+                    {R.overallAssessment?.finalOpinion&&(
+                      <div>
+                        <p style={{fontSize:11,color:"var(--text-tertiary)",textTransform:"uppercase",letterSpacing:"0.07em",margin:"0 0 10px"}}>종합 의견</p>
+                        <p style={{fontSize:14,lineHeight:1.85,margin:0}}>{R.overallAssessment.finalOpinion}</p>
+                      </div>
+                    )}
+                  </Card>
+                )}
+              </div>
+            )}
+
+            {/* ══ HISTORY VIEW ══ */}
+            {view==="history"&&(
+              <div className="fade-up">
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-end",marginBottom:22}}>
+                  <div>
+                    <h1 style={{fontFamily:"'Playfair Display',serif",fontSize:26,fontWeight:700,margin:"0 0 5px",letterSpacing:"-0.02em"}}>분석 히스토리</h1>
+                    <p style={{fontSize:13,color:"var(--text-secondary)",margin:0}}>{history.length}건의 분석 기록 저장됨</p>
+                  </div>
+                  {history.length>0&&(
+                    <button onClick={()=>{setHistory([]);try{localStorage.removeItem("prizm:history");}catch{}}} style={{background:"var(--bg-danger)",border:"1px solid var(--border-danger)",borderRadius:8,color:"var(--text-danger)",padding:"7px 16px",fontSize:12,cursor:"pointer"}}>전체 삭제</button>
+                  )}
+                </div>
+                {history.length===0?(
+                  <Card><p style={{color:"var(--text-tertiary)",textAlign:"center",padding:"32px 0",margin:0,fontSize:14}}>저장된 분석 기록이 없습니다. 영화를 분석하면 자동으로 저장됩니다.</p></Card>
+                ):(
+                  <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill, minmax(250px, 1fr))",gap:12}}>
+                    {history.map(e=>{
+                      const scC2=scoreColor(e.score), stC=STATUS_CFG[e.status], recC2=recColor(e.recommendation);
+                      return (
+                        <div key={e.id} className="hov-card" onClick={()=>{setResult(e.result);setForm(e.form||{});setTab("overview");setView("results");}}
+                          style={{background:"var(--bg-primary)",border:"0.5px solid var(--border-tertiary)",borderRadius:"var(--radius-lg)",padding:"16px 18px",cursor:"pointer",transition:"border-color .15s"}}>
+                          <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:10}}>
+                            <div style={{flex:1,minWidth:0,marginRight:10}}>
+                              <p style={{fontFamily:"'Playfair Display',serif",fontSize:15,fontWeight:700,margin:"0 0 2px",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{e.title}</p>
+                              {e.koreanTitle&&<p style={{fontSize:12,color:"var(--text-secondary)",margin:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{e.koreanTitle}</p>}
+                            </div>
+                            <div style={{fontFamily:"'Playfair Display',serif",fontSize:28,fontWeight:900,color:scC2,flexShrink:0}}>{e.score||"—"}</div>
+                          </div>
+                          <div style={{display:"flex",flexWrap:"wrap",gap:5,marginBottom:10}}>
+                            {stC&&<Badge c={stC.c} bg={stC.bg} border={stC.border}>{stC.label}</Badge>}
+                            {e.recommendation&&<Badge c={recC2} bg={recC2+"14"}>{e.recommendation}</Badge>}
+                          </div>
+                          <p style={{fontSize:11,color:"var(--text-tertiary)",margin:0}}>{new Date(e.date).toLocaleDateString("ko-KR",{year:"numeric",month:"long",day:"numeric"})}</p>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
+          </main>
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+  </script>
+</body>
+</html>
