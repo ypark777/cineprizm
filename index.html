@@ -68,6 +68,19 @@ td{padding:10px;border-bottom:.5px solid #e8e5e0}
 .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:100;display:flex;align-items:center;justify-content:center;padding:24px}
 .modal-box{background:#fff;border-radius:16px;padding:32px 28px;max-width:400px;width:100%}
 @media print{.no-print{display:none!important}}
+.export-modal{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;display:flex;align-items:flex-start;justify-content:flex-end;padding:58px 16px 0 0}
+.export-box{background:#fff;border-radius:14px;padding:8px 6px;box-shadow:0 8px 32px rgba(0,0,0,.18);min-width:190px}
+.export-item{display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:9px;cursor:pointer;font-size:13px;color:#1a1917;border:none;background:transparent;width:100%;text-align:left}
+.export-item:hover{background:#f6f4f1}
+.export-sep{height:1px;background:#e8e5e0;margin:4px 6px}
+@media print{
+  body{background:#fff!important}
+  header,nav,.no-print,#export-bar,.tabs{display:none!important}
+  main{max-width:100%!important;padding:0!important}
+  .card{border:1px solid #ddd!important;break-inside:avoid;margin-bottom:12px!important}
+  table{break-inside:avoid}
+  @page{margin:15mm 12mm}
+}
 </style>
 </head>
 <body>
@@ -215,6 +228,19 @@ td{padding:10px;border-bottom:.5px solid #e8e5e0}
   </main>
 </div>
 
+<div id="export-modal" class="export-modal" style="display:none" onclick="if(event.target===this)closeExport()">
+  <div class="export-box">
+    <button class="export-item" onclick="closeExport();window.print()">🖨️ 브라우저 인쇄 / PDF 저장</button>
+    <button class="export-item" onclick="closeExport();dlPrintAll()">📄 전체 탭 인쇄용 페이지 열기</button>
+    <div class="export-sep"></div>
+    <button class="export-item" onclick="closeExport();dlCSV()">📊 CSV 파일 (엑셀 호환)</button>
+    <button class="export-item" onclick="closeExport();dlTXT()">📝 TXT 파일 (전체 텍스트)</button>
+    <button class="export-item" onclick="closeExport();dlJSON()">🗂️ JSON 파일 (원본 데이터)</button>
+    <div class="export-sep"></div>
+    <button class="export-item" onclick="closeExport();doShare()">🔗 링크/텍스트 공유</button>
+  </div>
+</div>
+
 <div id="modal" class="modal-bg" style="display:none" onclick="if(event.target===this)closeModal()">
   <div class="modal-box">
     <h2 style="font-family:'Playfair Display',serif;font-size:20px;font-weight:700;margin-bottom:8px">설정</h2>
@@ -263,13 +289,20 @@ var TABS=[
   {id:'marketing',lbl:'마케팅 플랜'},{id:'press',lbl:'보도자료'},
   {id:'verdict',lbl:'종합 평가'}
 ];
-var SYS = '당신은 한국 외국 영화 수입배급사의 시니어 영화 분석가입니다. 웹 검색을 최대한 활용하여 입력된 영화의 한국 배급 가능성을 종합 분석합니다.\n\n【제작 상태별 검색 지침】\n- pre-production: 개발 공지 기사, 감독/배우 캐스팅 확정 뉴스 중심\n- in-production: 촬영 현장 기사, 첫 스틸 및 예고편 중심\n- completed: 영화제 상영 리뷰, 시사회 반응, 배급 계약 뉴스 중심\n- released: 최종 박스오피스 성적, 비평·관객 반응 중심\n\n【필수 검색 소스】\n1. IMDb, Rotten Tomatoes — 기본 정보 및 평점\n2. Variety, The Hollywood Reporter, Screen International, Deadline — 기사/리뷰\n3. Reddit: r/movies, r/criterion, r/filmfestivals 및 장르 서브레딧\n4. 익스트림무비(extrememovie.com), 무비코리아, 네이버 영화, 왓챠피디아\n5. KOBIS(kobis.or.kr) — 한국 개봉 영화 누적관객수\n6. BoxOfficeMojo(boxofficemojo.com/calendar/) — 북미 개봉 예정 일정\n\n【KOBIS 한국 흥행 조회 절차 — 반드시 준수】\n감독/배우 필모그래피 한국 흥행 및 유사작 비교 수치는 반드시:\n① 영문 원제로 KOBIS 검색 → 한국 개봉명 확인 → 누적관객수(발권통계) 기록\n② KOBIS에서 결과 없으면: 네이버에서 "영화 [영문원제]" 형식으로 검색 → 관객수 확인\n③ 두 방법 모두 실패 시: koreanAudience 필드에 "미개봉" 또는 "정보없음" 기재\n④ 반드시 한국개봉명(koreanTitle)과 누적관객수(koreanAudience)를 함께 기재\n   예: title="Knives Out", koreanTitle="나이브스 아웃", koreanAudience="1,247,832명"\n\n【BoxOfficeMojo 배급 시기 분석】\n① boxofficemojo.com/calendar/ 에서 해당 영화 북미 개봉일 확인\n② 전후 2~3개월 북미 주요 개봉작 조회\n③ 한국 메이저 직배사(CJ ENM, 월트디즈니, 유니버설, 워너, 소니 등)는 북미와 Day & Date 또는 1~2주 이내 한국 개봉이 관행\n④ 직배사 라인업과 겹치지 않는 최적 한국 개봉 시기 추천 + 경쟁 회피 근거 서술\n⑤ 사용자가 배급사 라인업 데이터를 업로드한 경우 해당 데이터를 최우선 반영\n\n【URL 규칙】 tradePressAndBuzz의 url 필드는 웹 검색으로 실제 확인된 URL만 기재. 못 찾으면 빈 문자열. URL 추측·생성 절대 금지.\n\n아래 JSON 형식으로만 응답. JSON 외 텍스트나 마크다운 코드블록 절대 포함 금지.\n\n{"filmOverview":{"title":"","koreanTitle":"","year":"","country":"","genre":"","runtime":"","status":"","releaseDate":"","imdbRating":"","rtScore":"","synopsis":"","awards":"","festivalHistory":""},"tradePressAndBuzz":{"tradeArticles":[{"source":"","title":"","url":"","date":"","summary":""}],"communityBuzz":[{"platform":"","title":"","url":"","sentiment":"positive|mixed|negative|unknown","note":""}],"festivalReviews":[{"source":"","title":"","url":"","sentiment":"positive|mixed|negative"}],"overallSentiment":"positive|mixed|negative|insufficient_data","buzzSummary":""},"directorAnalysis":{"name":"","nationality":"","careerSummary":"","majorWorks":[{"title":"원제","koreanTitle":"한국개봉명","year":"","globalBO":"","koreanAudience":"누적관객수 또는 미개봉"}],"koreanMarketSummary":"","acquisitionValue":""},"castAnalysis":[{"name":"","role":"","nationality":"","koreanRecognition":"높음|중간|낮음","majorWorks":[{"title":"원제","koreanTitle":"한국개봉명","year":"","koreanAudience":"누적관객수 또는 미개봉","note":""}],"marketingValue":""}],"marketAnalysis":{"opportunities":[{"factor":"","description":""}],"threats":[{"factor":"","description":""}],"comparableFilms":[{"title":"원제","koreanTitle":"한국개봉명","koreanAudience":"누적관객수","relevance":""}],"optimalReleaseWindow":""},"marketingPlan":{"primaryTarget":"","secondaryTarget":"","keywords":[],"taglines":[],"platformStrategy":"","keySellingPoints":[],"theatricalStrategy":{"releaseType":"","recommendedScreenCount":"","targetTheatreChains":"","releaseTimingSuggestion":"","competitionAnalysis":"","platformWindowStrategy":""}},"pressReleaseDraft":"","overallAssessment":{"acquisitionScore":7,"recommendation":"","expectedAudienceRange":"","keyRisks":"","finalOpinion":""}}';
+var SYS = '당신은 한국 외국 영화 수입배급사의 시니어 영화 분석가입니다. 웹 검색을 최대한 활용하여 입력된 영화의 한국 배급 가능성을 종합 분석합니다.\n\n【제작 상태별 검색 지침】\n- pre-production: 개발 공지 기사, 감독/배우 캐스팅 확정 뉴스 중심\n- in-production: 촬영 현장 기사, 첫 스틸 및 예고편 중심\n- completed: 영화제 상영 리뷰, 시사회 반응, 배급 계약 뉴스 중심\n- released: 최종 박스오피스 성적, 비평·관객 반응 중심\n\n【필수 검색 소스】\n1. IMDb, Rotten Tomatoes — 기본 정보 및 평점\n2. Variety, The Hollywood Reporter, Screen International, Deadline — 기사/리뷰\n3. Reddit: r/movies, r/criterion, r/filmfestivals 및 장르 서브레딧\n4. 익스트림무비(extrememovie.com), 무비코리아, 네이버 영화, 왓챠피디아\n5. KOBIS(kobis.or.kr) — 한국 개봉 영화 누적관객수\n6. BoxOfficeMojo(boxofficemojo.com/calendar/) — 북미 개봉 예정 일정\n\n【★ KOBIS·네이버 한국 흥행 조회 — 절대 생략 불가 ★】\n감독 majorWorks, 배우 majorWorks, 시장분석 comparableFilms 의 모든 항목에 대해 반드시 아래 절차를 실행하라:\n\nSTEP 1: 웹 검색 쿼리 "kobis [영문원제] 누적관객" 으로 KOBIS 검색\nSTEP 2: KOBIS에서 못 찾으면 검색 쿼리 "네이버 영화 [영문원제] 관객수" 로 네이버 검색\nSTEP 3: 두 곳 모두 실패 시에만 "미개봉" 또는 "정보없음" 기재\n\n★ koreanTitle 필드: KOBIS 또는 네이버에서 확인된 한국 정식 개봉 제목을 기재. 미개봉이면 "미개봉" 기재.\n★ koreanAudience 필드: KOBIS 발권 누적관객수를 "1,234,567명" 형식으로 기재. 못 찾으면 "정보없음" 기재.\n★ 절대로 koreanTitle이나 koreanAudience 필드를 빈 문자열("")로 남기지 말 것.\n\n예시:\n- title="Knives Out" → KOBIS검색 → koreanTitle="나이브스 아웃", koreanAudience="1,247,832명"\n- title="The Substance" → KOBIS검색 → koreanTitle="더 서브스턴스", koreanAudience="312,450명"\n- title="미개봉작" → 두 곳 모두 없음 → koreanTitle="미개봉", koreanAudience="미개봉"\n\n【BoxOfficeMojo 배급 시기 분석】\n① boxofficemojo.com/calendar/ 에서 해당 영화 북미 개봉일 확인\n② 전후 2~3개월 북미 주요 개봉작 조회\n③ 한국 메이저 직배사(CJ ENM, 월트디즈니, 유니버설, 워너, 소니 등)는 북미와 Day & Date 또는 1~2주 이내 한국 개봉이 관행\n④ 직배사 라인업과 겹치지 않는 최적 한국 개봉 시기 추천 + 경쟁 회피 근거 서술\n⑤ 사용자가 배급사 라인업 데이터를 업로드한 경우 해당 데이터를 최우선 반영\n\n【URL 규칙】 tradePressAndBuzz의 url 필드는 웹 검색으로 실제 확인된 URL만 기재. 못 찾으면 빈 문자열. URL 추측·생성 절대 금지.\n\n아래 JSON 형식으로만 응답. JSON 외 텍스트나 마크다운 코드블록 절대 포함 금지.\n\n{"filmOverview":{"title":"","koreanTitle":"","year":"","country":"","genre":"","runtime":"","status":"","releaseDate":"","imdbRating":"","rtScore":"","synopsis":"","awards":"","festivalHistory":""},"tradePressAndBuzz":{"tradeArticles":[{"source":"","title":"","url":"","date":"","summary":""}],"communityBuzz":[{"platform":"","title":"","url":"","sentiment":"positive|mixed|negative|unknown","note":""}],"festivalReviews":[{"source":"","title":"","url":"","sentiment":"positive|mixed|negative"}],"overallSentiment":"positive|mixed|negative|insufficient_data","buzzSummary":""},"directorAnalysis":{"name":"","nationality":"","careerSummary":"","majorWorks":[{"title":"영문원제","koreanTitle":"KOBIS확인한국개봉명또는미개봉","year":"","globalBO":"","koreanAudience":"KOBIS누적관객수또는미개봉"}],"koreanMarketSummary":"","acquisitionValue":""},"castAnalysis":[{"name":"","role":"","nationality":"","koreanRecognition":"높음|중간|낮음","majorWorks":[{"title":"영문원제","koreanTitle":"KOBIS확인한국개봉명또는미개봉","year":"","koreanAudience":"KOBIS누적관객수또는미개봉","note":""}],"marketingValue":""}],"marketAnalysis":{"opportunities":[{"factor":"","description":""}],"threats":[{"factor":"","description":""}],"comparableFilms":[{"title":"영문원제","koreanTitle":"KOBIS확인한국개봉명","koreanAudience":"KOBIS누적관객수","relevance":""}],"optimalReleaseWindow":""},"marketingPlan":{"primaryTarget":"","secondaryTarget":"","keywords":[],"taglines":[],"platformStrategy":"","keySellingPoints":[],"theatricalStrategy":{"releaseType":"","recommendedScreenCount":"","targetTheatreChains":"","releaseTimingSuggestion":"","competitionAnalysis":"","platformWindowStrategy":""}},"pressReleaseDraft":"","overallAssessment":{"acquisitionScore":7,"recommendation":"","expectedAudienceRange":"","keyRisks":"","finalOpinion":""}}';
 
 function e(s){if(!s)return'';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 function bdg(txt,c,bg,br,sx){var bc=br||(c?c+'30':'#e8e5e0');var close=sx?sx+('">'):('">'+"");return '<span class="bdg" style="background:'+(bg||'#f6f4f1')+';color:'+(c||'#5c5955')+';border-color:'+bc+';'+close+e(txt)+'</span>';}
 function row(lbl,val){if(!val||['N/A','해당없음','미정',''].indexOf(String(val).trim())>-1)return'';return'<div class="row-wrap"><span class="row-label">'+e(lbl)+'</span><span class="row-val">'+e(val)+'</span></div>';}
 function rcol(r){if(!r)return'#6b7280';if(r.indexOf('추천')>-1)return'#059669';if(r.indexOf('검토')>-1||r.indexOf('조건')>-1)return'#d97706';return'#c9292b';}
 function scol(n){if(!n)return'#9c9894';if(n>=8)return'#e8a500';if(n>=6)return'#059669';if(n>=4)return'#d97706';return'#c9292b';}
+
+function stripCite(obj){
+  if(typeof obj==='string') return obj.replace(/<cite[^>]*>/g,'').replace(/<\/cite>/g,'').replace(/\[citation:[^\]]*\]/g,'').replace(/\[\d+\]/g,'').trim();
+  if(Array.isArray(obj)) return obj.map(stripCite);
+  if(obj&&typeof obj==='object'){var r={};Object.keys(obj).forEach(function(k){r[k]=stripCite(obj[k]);});return r;}
+  return obj;
+}
 
 window.onload=function(){
   try{G.history=JSON.parse(localStorage.getItem('prizm:history')||'[]');}catch(x){G.history=[];}
@@ -419,6 +452,7 @@ async function runAnal(fd){
     var m=raw.match(/\{[\s\S]*\}/);
     if(!m)throw new Error('결과 파싱 실패. 다시 시도해 주세요.');
     var parsed=JSON.parse(m[0]);
+    parsed=stripCite(parsed);
     G.result=parsed;G.tab='overview';
     saveH(parsed,fd);
     stopLoad();renderRes(parsed);showV('res');
@@ -521,11 +555,7 @@ function renderRes(R){
   TABS.forEach(function(t){th+='<button class="tab'+(G.tab===t.id?' active':'')+'" data-tid="'+t.id+'" onclick="swTab(this)">'+t.lbl+'</button>';});
   th+='<div style="flex:1"></div><button class="tab" onclick="gotoForm()" style="color:#9c9894">+ 새 분석</button>';
   document.getElementById('res-tabs').innerHTML=th;
-  var eb='';
-  eb+='<button class="hbtn" onclick="doShare()">공유</button>';
-  eb+='<button class="hbtn" onclick="dlCSV()">CSV</button>';
-  eb+='<button class="hbtn" onclick="dlTXT()">텍스트</button>';
-  eb+='<button class="hbtn" onclick="window.print()">인쇄/PDF</button>';
+  var eb='<button class="hbtn" onclick="openExport()" style="display:flex;align-items:center;gap:6px">내보내기 / 인쇄 ▾</button>';
   document.getElementById('export-bar').innerHTML=eb;
   renderTab(G.tab,R);
 }
@@ -671,6 +701,79 @@ function cpPress(){
     btn.textContent='✓ 복사됨';btn.style.color='#15803d';
     setTimeout(function(){btn.textContent='복사';btn.style.color='';},2200);
   });
+}
+
+function openExport(){document.getElementById('export-modal').style.display='flex';}
+function closeExport(){document.getElementById('export-modal').style.display='none';}
+
+function dlJSON(){
+  var R=G.result||{};var ov=R.filmOverview||{};
+  var blob=new Blob([JSON.stringify(R,null,2)],{type:'application/json;charset=utf-8;'});
+  var a=document.createElement('a');a.href=URL.createObjectURL(blob);
+  a.download='PRIZM_'+((ov.title||'film').replace(/\s+/g,'_'))+'_'+new Date().toISOString().slice(0,10)+'.json';a.click();
+}
+
+function dlPrintAll(){
+  var R=G.result||{};
+  var ov=R.filmOverview||{},oa=R.overallAssessment||{},mp=R.marketingPlan||{},ts=mp.theatricalStrategy||{};
+  var ma=R.marketAnalysis||{},bz=R.tradePressAndBuzz||{},dir=R.directorAnalysis||{};
+  var stCfg=SC[ov.status];
+  function pe(s){if(!s)return'';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+  function pr(l,v){if(!v||['N/A','해당없음','미정',''].indexOf(String(v).trim())>-1)return'';return'<tr><td style="color:#9c9894;font-size:11px;width:110px;padding:6px 8px;vertical-align:top">'+pe(l)+'</td><td style="font-size:13px;padding:6px 8px;line-height:1.6">'+pe(v)+'</td></tr>';}
+  var css='body{font-family:\'DM Sans\',sans-serif;color:#1a1917;margin:0;padding:20px;font-size:13px}h1{font-family:\'Playfair Display\',serif;font-size:22px;margin:0 0 4px}h2{font-family:\'Playfair Display\',serif;font-size:15px;margin:18px 0 8px;color:#c9292b}table{width:100%;border-collapse:collapse}td{border-bottom:.5px solid #e8e5e0}.section{background:#fff;border:1px solid #e8e5e0;border-radius:10px;padding:14px 16px;margin-bottom:12px;break-inside:avoid}.tagline{border-left:3px solid #c9292b;padding:8px 12px;margin-bottom:6px;font-style:italic}.kw{display:inline-block;background:#f6f4f1;border-radius:12px;padding:2px 10px;font-size:11px;margin:2px 3px 2px 0}@page{margin:12mm 10mm}@media print{button{display:none}}';
+  var worksRows=function(works){if(!works||!works.length)return'';var r='<table style="margin-top:8px"><tr><th style="font-size:10px;color:#9c9894;padding:4px 8px;font-weight:400">원제</th><th style="font-size:10px;color:#9c9894;padding:4px 8px;font-weight:400">한국개봉명</th><th style="font-size:10px;color:#9c9894;padding:4px 8px;font-weight:400">연도</th><th style="font-size:10px;color:#9c9894;padding:4px 8px;font-weight:400">글로벌</th><th style="font-size:10px;color:#9c9894;padding:4px 8px;font-weight:400">한국누적관객</th></tr>';works.forEach(function(w){r+='<tr><td style="padding:5px 8px">'+pe(w.title)+'</td><td style="padding:5px 8px">'+pe(w.koreanTitle||'—')+'</td><td style="padding:5px 8px;color:#9c9894">'+pe(w.year)+'</td><td style="padding:5px 8px;color:#5c5955">'+pe(w.globalBO||'—')+'</td><td style="padding:5px 8px;color:#d97706">'+pe(w.koreanAudience||w.koreanBO||'—')+'</td></tr>';});return r+'</table>';};
+  var body='<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet"/>';
+  body+='<style>'+css+'</style>';
+  body+='<h1>'+pe(ov.title)+(ov.koreanTitle?' / '+pe(ov.koreanTitle):'')+'</h1>';
+  body+='<p style="color:#9c9894;font-size:11px;margin-bottom:16px">PRIZM 분석 리포트 · '+new Date().toLocaleDateString('ko-KR')+'</p>';
+  body+='<div class="section"><h2 style="margin-top:0">영화 개요</h2><table>';
+  body+=pr('시놉시스',ov.synopsis)+pr('감독',dir.name)+pr('장르',ov.genre)+pr('제작국가',ov.country)+pr('상영시간',ov.runtime);
+  if(stCfg)body+=pr('제작 상태',stCfg.label+(ov.releaseDate&&ov.releaseDate!=='미정'?' ('+ov.releaseDate+')':''));
+  body+=pr('IMDb',ov.imdbRating)+pr('RT',ov.rtScore)+pr('영화제',ov.festivalHistory)+pr('수상',ov.awards);
+  body+='</table></div>';
+  if(dir.name){
+    body+='<div class="section"><h2 style="margin-top:0">감독 · 배우</h2>';
+    body+='<p style="font-weight:600;margin-bottom:4px">'+pe(dir.name)+(dir.nationality?' ('+pe(dir.nationality)+')':'')+'</p>';
+    if(dir.careerSummary)body+='<p style="color:#5c5955;margin-bottom:8px">'+pe(dir.careerSummary)+'</p>';
+    body+=worksRows(dir.majorWorks);
+    (R.castAnalysis||[]).forEach(function(a){
+      body+='<p style="font-weight:600;margin:12px 0 4px">'+pe(a.name)+(a.role?' 役 '+pe(a.role):'')+'<span style="font-size:11px;color:#9c9894;margin-left:8px">한국 인지도 '+pe(a.koreanRecognition)+'</span></p>';
+      body+=worksRows(a.majorWorks);
+    });
+    body+='</div>';
+  }
+  var compareRows='';
+  (ma.comparableFilms||[]).forEach(function(f){compareRows+='<tr><td style="padding:5px 8px;color:#5c5955">'+pe(f.title)+'</td><td style="padding:5px 8px;font-weight:500">'+pe(f.koreanTitle||f.title)+'</td><td style="padding:5px 8px;color:#d97706">'+pe(f.koreanAudience||f.koreanBO||'—')+'</td><td style="padding:5px 8px;color:#5c5955;font-size:12px">'+pe(f.relevance)+'</td></tr>';});
+  if(compareRows){
+    body+='<div class="section"><h2 style="margin-top:0">유사작 한국 흥행 비교</h2><table><tr><th style="font-size:10px;color:#9c9894;padding:4px 8px;font-weight:400">원제</th><th style="font-size:10px;color:#9c9894;padding:4px 8px;font-weight:400">한국개봉명</th><th style="font-size:10px;color:#9c9894;padding:4px 8px;font-weight:400">누적관객</th><th style="font-size:10px;color:#9c9894;padding:4px 8px;font-weight:400">비교근거</th></tr>'+compareRows+'</table>';
+    if(ma.optimalReleaseWindow)body+='<p style="margin-top:10px;font-size:12px"><span style="color:#9c9894">추천 시즌:</span> '+pe(ma.optimalReleaseWindow)+'</p>';
+    body+='</div>';
+  }
+  body+='<div class="section"><h2 style="margin-top:0">마케팅 플랜 · 배급 전략</h2><table>';
+  body+=pr('핵심 타겟',mp.primaryTarget)+pr('부차 타겟',mp.secondaryTarget);
+  body+='</table>';
+  if(mp.keywords&&mp.keywords.length){body+='<p style="margin:8px 0 4px;font-size:11px;color:#9c9894">키워드</p>';mp.keywords.forEach(function(k){body+='<span class="kw">#'+pe(k)+'</span>';});}
+  if(mp.taglines&&mp.taglines.length){body+='<p style="margin:10px 0 4px;font-size:11px;color:#9c9894">카피라인</p>';mp.taglines.forEach(function(t){body+='<div class="tagline">'+pe(t)+'</div>';});}
+  if(ts.releaseType){
+    body+='<p style="margin:10px 0 6px;font-size:12px;font-weight:600;color:#c9292b">극장 배급 전략</p><table>';
+    body+=pr('개봉 유형',ts.releaseType)+pr('추천 시기',ts.releaseTimingSuggestion)+pr('상영관 수',ts.recommendedScreenCount)+pr('체인 전략',ts.targetTheatreChains)+pr('경쟁작',ts.competitionAnalysis)+pr('OTT 전환',ts.platformWindowStrategy);
+    body+='</table>';
+  }
+  body+='</div>';
+  var sc4=oa.acquisitionScore;var rc4=rcol(oa.recommendation);
+  body+='<div class="section"><h2 style="margin-top:0">종합 평가</h2>';
+  body+='<div style="display:flex;gap:20px;align-items:center;margin-bottom:12px"><div style="font-family:\'Playfair Display\',serif;font-size:56px;font-weight:900;color:'+scol(sc4)+';line-height:1">'+(sc4||'—')+'</div><div style="background:'+rc4+'18;color:'+rc4+';border:1px solid '+rc4+'40;border-radius:8px;padding:6px 16px;font-size:14px;font-weight:600">'+(oa.recommendation||'')+'</div></div>';
+  body+='<table>'+pr('예상 관객',oa.expectedAudienceRange)+'</table>';
+  if(oa.keyRisks)body+='<p style="background:#fff5f5;border-radius:6px;padding:8px 12px;margin:10px 0;font-size:12px"><strong style="color:#b91c1c">핵심 리스크:</strong> '+pe(oa.keyRisks)+'</p>';
+  if(oa.finalOpinion)body+='<p style="font-size:13px;line-height:1.7;margin-top:8px">'+pe(oa.finalOpinion)+'</p>';
+  body+='</div>';
+  if(R.pressReleaseDraft){
+    body+='<div class="section"><h2 style="margin-top:0">보도자료 초안</h2><p style="line-height:1.9;white-space:pre-wrap;font-size:13px">'+pe(R.pressReleaseDraft)+'</p></div>';
+  }
+  var w=window.open('','_blank','width=800,height=900');
+  if(!w){alert('팝업이 차단됐습니다. 브라우저 팝업 허용 후 다시 시도하세요.');return;}
+  w.document.write('<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8"><title>PRIZM — '+pe(ov.title||'분석 리포트')+'</title>'+body+'<script>window.onload=function(){window.print();}<\/script></head><body>'+body+'<button onclick="window.print()" style="position:fixed;bottom:20px;right:20px;background:#c9292b;border:none;color:#fff;padding:12px 24px;border-radius:10px;font-size:14px;cursor:pointer">🖨️ 인쇄 / PDF 저장</button></body></html>');
+  w.document.close();
 }
 
 function doShare(){
